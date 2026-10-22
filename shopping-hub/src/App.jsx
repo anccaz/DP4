@@ -96,4 +96,21 @@ export default function App() {
   ]);
   const [newQuestionText, setNewQuestionText] = useState('Do these shoes run true to size?');
   const [lastSubmittedQuestion, setLastSubmittedQuestion] = useState('');
+
+  // Orders & Return State
+  const [orders, setOrders] = useState([
+    {
+      id: '#1042',
+      productName: 'Comfort Walking Shoes',
+      store: 'Sample Store',
+      deliveryDate: 'Delivered October 10',
+      totalPaid: 59.99,
+      status: 'Delivered',
+      returnInitiated: false,
+      returnMethod: 'Drop-off at local store',
+      trackingCode: 'TRK-98234710-SH'
+    }
+  ]);
+  const [selectedReturnMethod, setSelectedReturnMethod] = useState('drop-off');
+
 }

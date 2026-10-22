@@ -73,3 +73,11 @@ const PRODUCTS = [
     }
   }
 ];
+
+export default function App() {
+  // Navigation & Screen View State
+  const [currentView, setCurrentView] = useState('home'); // home | search | details | ask | submitted | compare | orders | track | return | returnConfirm | settings
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
+  const [selectedForCompare, setSelectedForCompare] = useState(['prod-1']);
+}

@@ -113,4 +113,50 @@ export default function App() {
   ]);
   const [selectedReturnMethod, setSelectedReturnMethod] = useState('drop-off');
 
+// Navigation & Action Handlers
+const handleSearchSubmit = (e) => {
+  if (e) e.preventDefault();
+  setCurrentView('search');
+};
+
+const handleSelectProduct = (prod) => {
+  setSelectedProduct(prod);
+  setCurrentView('details');
+};
+
+const toggleCompareCheckbox = (id) => {
+  if (selectedForCompare.includes(id)) {
+    setSelectedForCompare(selectedForCompare.filter((item) => item !== id));
+  } else {
+    if (selectedForCompare.length < 2) {
+      setSelectedForCompare([...selectedForCompare, id]);
+    }
+  }
+};
+
+const handlePostQuestion = (e) => {
+  e.preventDefault();
+  if (!newQuestionText.trim()) return;
+  setLastSubmittedQuestion(newQuestionText);
+  setQuestions([
+    ...questions,
+    {
+      q: newQuestionText,
+      a: 'Status: Waiting for a buyer response'
+    }
+  ]);
+  setCurrentView('submitted');
+};
+
+const handleConfirmReturn = () => {
+  setOrders((prev) =>
+    prev.map((ord) =>
+      ord.id === '#1042'
+        ? { ...ord, returnInitiated: true, returnMethod: selectedReturnMethod === 'drop-off' ? 'Store Drop-off' : 'Courier Pickup' }
+        : ord
+    )
+  );
+  setCurrentView('returnConfirm');
+};
+
 }

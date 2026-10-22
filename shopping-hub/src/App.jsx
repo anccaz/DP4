@@ -86,4 +86,14 @@ export default function App() {
   const [filterPickup, setFilterPickup] = useState(false);
   const [filterOnline, setFilterOnline] = useState(false);
   const [filterFreeShipping, setFilterFreeShipping] = useState(false);
+
+  // Q&A State
+  const [questions, setQuestions] = useState([
+    {
+      q: 'Are these comfortable for daily walking?',
+      a: 'I use them on daily walks and find them comfortable. — Verified Buyer ✓'
+    }
+  ]);
+  const [newQuestionText, setNewQuestionText] = useState('Do these shoes run true to size?');
+  const [lastSubmittedQuestion, setLastSubmittedQuestion] = useState('');
 }

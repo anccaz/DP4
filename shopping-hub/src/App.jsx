@@ -9,6 +9,7 @@ const PRODUCTS = [
     price: 59.99,
     availability: 'Local pickup available',
     shipping: 'Free delivery available',
+    
     inStock: true,
     rating: 4.8,
     category: 'walking shoes',

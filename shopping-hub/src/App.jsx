@@ -80,4 +80,10 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
   const [selectedForCompare, setSelectedForCompare] = useState(['prod-1']);
+
+  // Filters State
+  const [filterPrice, setFilterPrice] = useState(false);
+  const [filterPickup, setFilterPickup] = useState(false);
+  const [filterOnline, setFilterOnline] = useState(false);
+  const [filterFreeShipping, setFilterFreeShipping] = useState(false);
 }

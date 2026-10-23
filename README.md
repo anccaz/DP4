@@ -1,16 +1,68 @@
-# React + Vite
+# Shopping Hub
+An online shopping website designed with usability, simplicity, and accessibility in mind. Shopping Hub aims to make online shopping more intuitive, transparent, and trustworthy for users of all ages and technical abilities, including older adults who might otherwise feel excluded from using such technology.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The application focuses on reducing unnecessary complexity, simplifying product browsing and comparison, and helping users make informed purchasing decisions with confidence.
 
-Currently, two official plugins are available:
+## Requirements
+### Before getting started, install:
+- Node.js: Version 24 LTS recommended (download from nodejs.org)
+- npm: Included with Node.js
+- Git: For cloning the repository and managing branches
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Verify your installation in terminal:
+```bash
+node --version
+```
+```bash
+npm --version
+```
 
-## React Compiler
+### Important:
+Older Node.js versions may cause dependency installation or Vite startup errors. 
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+If you have multiple Node.js installations, make sure your terminal is using a supported version.
 
-## Expanding the ESLint configuration
+## Getting Started
+### 1. Clone the repository
+```bash
+git clone https://github.com/anccaz/DP4.git
+```
+```bash
+cd DP4
+```
+### 2. Install dependencies
+```bash
+npm install
+```
+### 3. Start the development server
+```bash
+npm run dev
+```
+If the two previous commands are successful, you should be given a local URL displayed in the terminal which you can open to view the site.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Project Structure
+### Folder Guidelines
+- components/
+  - Reusable interface elements, such as the header and product cards
+- pages/
+  - Individual screens, such as Product Browsing, Comparison, Orders, etc.
+- data/
+  - Shared data that multiple features use, such as the product catalog
+- styles/
+  - Shared styles to maintain a consistent appearance
+- App.jsx
+  - Coordinates navigation and shared application state
+
+## Git Workflow
+Each team member has their own development branch.
+1. Switch to your branch before making changes.
+2. Bring in the latest changes from main when needed.
+3. Make and test your changes locally.
+4. Commit your completed work.
+5. Push your branch to GitHub.
+6. Open a pull request when your changes are ready to merge into main.
+
+*Avoid commiting directly to main without coordinating with the team.*
+
+## Notes
+- The current application uses sample product and order data for demonstration purposes.

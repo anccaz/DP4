@@ -3,6 +3,7 @@ import { styles } from "../styles/styles";
 import ProductCard from "../components/ProductCard";
 
 export default function ProductBrowsing({
+  searchQuery,
   filterPrice,
   setFilterPrice,
   filterPickup,
@@ -16,11 +17,20 @@ export default function ProductBrowsing({
   handleSelectProduct,
   setCurrentView,
 }) {
+  const filteredProducts = PRODUCTS.filter((product) => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return (
+      product.name.toLowerCase().includes(query) ||
+      product.category.toLowerCase().includes(query) ||
+      product.keywords.some((keyword) => keyword.toLowerCase().includes(query))
+    );
+  });
   return (
     <div>
       <span style={styles.subLabel}>Search products</span>
       <h1 style={styles.pageHeading}>
-        Results for &ldquo;walking shoes&rdquo;
+        {searchQuery.trim() ? `Results for "${searchQuery}"` : "All products"}
       </h1>
 
       <div style={{ display: "flex", gap: "24px" }}>
@@ -161,14 +171,14 @@ export default function ProductBrowsing({
             }}
           >
             <span style={{ fontSize: "18px", fontWeight: "700" }}>
-              2 products found
+              {filteredProducts.length} {filteredProducts.length === 1 ? "product" : "products"} found
             </span>
             <span style={{ fontSize: "13px", color: "#64748b" }}>
               Sort: Lowest total price
             </span>
           </div>
 
-          {PRODUCTS.slice(0, 2).map((prod) => (
+          {filteredProducts.map((prod) => (
             <ProductCard
               key={prod.id}
               product={prod}

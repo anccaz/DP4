@@ -127,6 +127,7 @@ export default function App() {
         {/* VIEW 2: SEARCH RESULTS PAGE */}
         {currentView === "search" && (
           <ProductBrowsing
+            searchQuery={searchQuery}
             filterPrice={filterPrice}
             setFilterPrice={setFilterPrice}
             filterPickup={filterPickup}

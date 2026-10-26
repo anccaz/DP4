@@ -5,53 +5,166 @@ import { styles } from "../styles/styles";
 export default function Comparison({
   selectedForCompare,
   handleSelectProduct,
+  onRemoveProduct,
   setCurrentView,
 }) {
-  // Get the products selected 
+  // Find the products the user selected
   const comparedProducts = selectedForCompare
     .map((id) => PRODUCTS.find((product) => product.id === id))
     .filter(Boolean);
 
-  // Get all spec names from selected products
+  // Collect the specifications of both selected products
   const specKeys = [
     ...new Set(
       comparedProducts.flatMap((product) =>
-        Object.keys(product.specs)
+        Object.keys(product.specs ?? {})
       )
     ),
   ];
 
+  // Information displayed in the comparison table
+  const comparisonRows = [
+    {
+      label: "Price",
+      getValue: (product) => `$${product.price.toFixed(2)}`,
+    },
+    {
+      label: "Store",
+      getValue: (product) => product.store,
+    },
+    {
+      label: "Rating",
+      getValue: (product) => `${product.rating} / 5`,
+    },
+    {
+      label: "Availability",
+      getValue: (product) =>
+        product.inStock ? "In Stock" : "Out of Stock",
+    },
+    {
+      label: "Shipping",
+      getValue: (product) => product.shipping,
+    },
+
+    // Add specifications such as weight and cushioning
+    ...specKeys.map((key) => ({
+      label: key
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (letter) => letter.toUpperCase()),
+      getValue: (product) =>
+        product.specs?.[key] ?? "N/A",
+    })),
+  ];
+
+  // Only show the comparison table when two products exist
+  const canCompare = comparedProducts.length === 2;
+
   return (
     <div>
       <span style={styles.subLabel}>Decision Support</span>
-      <h1 style={styles.pageHeading}>Product Comparison</h1>
 
-      {comparedProducts.length === 0 ? (
-        <div style={styles.card}>
-          <p>No products selected for comparison.</p>
+      <h1 style={styles.pageHeading}>
+        Product Comparison
+      </h1>
+
+      {/* Show the products currently selected */}
+      {comparedProducts.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+            marginBottom: "20px",
+          }}
+        >
+          {comparedProducts.map((product) => (
+            <button
+              key={product.id}
+              type="button"
+              style={styles.outlineBtn}
+              onClick={() => onRemoveProduct(product.id)}
+              aria-label={`Remove ${product.name} from comparison`}
+            >
+              {product.name} ×
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Ask the user to select two products if needed */}
+      {!canCompare ? (
+        <div style={styles.card} role="status">
+          <p>
+            {comparedProducts.length === 0
+              ? "No products selected."
+              : "One product selected."}
+          </p>
+
+          <p>
+            Select two products to compare their
+            prices and features.
+          </p>
+
           <button
+            type="button"
             style={styles.yellowBtn}
             onClick={() => setCurrentView("search")}
           >
-            Browse Products
+            Choose Products
           </button>
         </div>
       ) : (
-        <div style={{ ...styles.card, overflowX: "auto" }}>
+        /* The table can scroll sideways on smaller screens */
+        <div
+          role="region"
+          aria-label="Product comparison table"
+          tabIndex={0}
+          style={{
+            ...styles.card,
+            overflowX: "auto",
+            maxWidth: "100%",
+            padding: "16px",
+          }}
+        >
           <table
             style={{
               width: "100%",
+              minWidth: "600px",
               borderCollapse: "collapse",
               textAlign: "left",
               fontSize: "15px",
             }}
           >
-            <thead>
-              <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
-                <th style={{ padding: "16px" }}>Feature</th>
+            <caption
+              style={{
+                textAlign: "left",
+                paddingBottom: "16px",
+                color: "#475569",
+              }}
+            >
+              Side-by-side comparison of two selected products
+            </caption>
 
+            <thead>
+              <tr
+                style={{
+                  borderBottom: "2px solid #e2e8f0",
+                }}
+              >
+                <th
+                  scope="col"
+                  style={{ padding: "16px" }}
+                >
+                  Feature
+                </th>
+
+                {/* Display the selected product names */}
                 {comparedProducts.map((product) => (
-                  <th key={product.id} style={{ padding: "16px" }}>
+                  <th
+                    key={product.id}
+                    scope="col"
+                    style={{ padding: "16px" }}
+                  >
                     {product.name}
                   </th>
                 ))}
@@ -59,108 +172,70 @@ export default function Comparison({
             </thead>
 
             <tbody>
-              {/* Price */}
-              <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "16px", fontWeight: "600" }}>
-                  Price
-                </td>
-
-                {comparedProducts.map((product) => (
-                  <td
-                    key={product.id}
+              {/* Display each product's information */}
+              {comparisonRows.map((row) => (
+                <tr
+                  key={row.label}
+                  style={{
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
+                  <th
+                    scope="row"
                     style={{
                       padding: "16px",
-                      fontSize: "18px",
-                      fontWeight: "700",
-                      color: "#fab633",
+                      fontWeight: "600",
+                      textAlign: "left",
                     }}
                   >
-                    ${product.price.toFixed(2)}
-                  </td>
-                ))}
-              </tr>
-
-              {/* Store */}
-              <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "16px", fontWeight: "600" }}>
-                  Store
-                </td>
-
-                {comparedProducts.map((product) => (
-                  <td key={product.id} style={{ padding: "16px" }}>
-                    {product.store}
-                  </td>
-                ))}
-              </tr>
-
-              {/* Rating */}
-              <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "16px", fontWeight: "600" }}>
-                  Rating
-                </td>
-
-                {comparedProducts.map((product) => (
-                  <td key={product.id} style={{ padding: "16px" }}>
-                    {product.rating} / 5
-                  </td>
-                ))}
-              </tr>
-
-              {/* Availability */}
-              <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "16px", fontWeight: "600" }}>
-                  Availability
-                </td>
-
-                {comparedProducts.map((product) => (
-                  <td key={product.id} style={{ padding: "16px" }}>
-                    {product.inStock ? "In Stock" : "Out of Stock"}
-                  </td>
-                ))}
-              </tr>
-
-              {/* Shipping */}
-              <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "16px", fontWeight: "600" }}>
-                  Shipping
-                </td>
-
-                {comparedProducts.map((product) => (
-                  <td key={product.id} style={{ padding: "16px" }}>
-                    {product.shipping}
-                  </td>
-                ))}
-              </tr>
-
-              {/* Dynamic Product Specifications */}
-              {specKeys.map((spec) => (
-                <tr
-                  key={spec}
-                  style={{ borderBottom: "1px solid #f1f5f9" }}
-                >
-                  <td style={{ padding: "16px", fontWeight: "600" }}>
-                    {spec.replace(/([A-Z])/g, " $1")}
-                  </td>
+                    {row.label}
+                  </th>
 
                   {comparedProducts.map((product) => (
-                    <td key={product.id} style={{ padding: "16px" }}>
-                      {product.specs[spec] ?? "N/A"}
+                    <td
+                      key={product.id}
+                      style={{
+                        padding: "16px",
+                        fontWeight:
+                          row.label === "Price"
+                            ? "700"
+                            : "400",
+                        color:
+                          row.label === "Price"
+                            ? "#b45309"
+                            : "#1e293b",
+                      }}
+                    >
+                      {row.getValue(product)}
                     </td>
                   ))}
                 </tr>
               ))}
 
-              {/* Select Product */}
+              {/* Open details for the preferred product */}
               <tr>
-                <td style={{ padding: "16px", fontWeight: "600" }}>
+                <th
+                  scope="row"
+                  style={{
+                    padding: "16px",
+                    textAlign: "left",
+                  }}
+                >
                   Action
-                </td>
+                </th>
 
                 {comparedProducts.map((product) => (
-                  <td key={product.id} style={{ padding: "16px" }}>
+                  <td
+                    key={product.id}
+                    style={{ padding: "16px" }}
+                  >
                     <button
+                      type="button"
                       style={styles.yellowBtn}
-                      onClick={() => handleSelectProduct(product)}
+                      aria-label={`View details for ${product.name}`}
+                      onClick={() =>
+                        handleSelectProduct(product)
+                      }
                     >
                       Select this
                     </button>
@@ -172,8 +247,13 @@ export default function Comparison({
         </div>
       )}
 
+      {/* Return to product browsing */}
       <button
-        style={{ ...styles.outlineBtn, marginTop: "24px" }}
+        type="button"
+        style={{
+          ...styles.outlineBtn,
+          marginTop: "24px",
+        }}
         onClick={() => setCurrentView("search")}
       >
         ← Back to search results

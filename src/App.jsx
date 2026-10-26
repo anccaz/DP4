@@ -16,19 +16,21 @@ import Settings from "./pages/Settings";
 import Header from "./components/Header";
 
 export default function App() {
-  // Navigation & Screen View State
+  // Navigation and current product information
   const [currentView, setCurrentView] = useState("home");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
+
+  // Start with no products selected for comparison
   const [selectedForCompare, setSelectedForCompare] = useState([]);
 
-  // Filters State
+  // Product filters
   const [filterPrice, setFilterPrice] = useState(false);
   const [filterPickup, setFilterPickup] = useState(false);
   const [filterOnline, setFilterOnline] = useState(false);
   const [filterFreeShipping, setFilterFreeShipping] = useState(false);
 
-  // Q&A State
+  // Questions and answers
   const [questions, setQuestions] = useState([
     {
       q: "Are these comfortable for daily walking?",
@@ -42,7 +44,7 @@ export default function App() {
 
   const [lastSubmittedQuestion, setLastSubmittedQuestion] = useState("");
 
-  // Orders & Return State
+  // Orders and returns
   const [orders, setOrders] = useState([
     {
       id: "#1042",
@@ -60,9 +62,7 @@ export default function App() {
   const [selectedReturnMethod, setSelectedReturnMethod] =
     useState("drop-off");
 
-  // Navigation & Action Handlers
-
-  // FIX: Clear product selections when returning Home
+  // Clear comparison selections when returning Home
   const handleNavigation = (view) => {
     if (view === "home") {
       setSelectedForCompare([]);
@@ -71,28 +71,42 @@ export default function App() {
     setCurrentView(view);
   };
 
+  // Open the product search page
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
     setCurrentView("search");
   };
 
+  // Open details for the chosen product
   const handleSelectProduct = (prod) => {
     setSelectedProduct(prod);
     setCurrentView("details");
   };
 
+  // Allow users to select or deselect up to two products
   const toggleCompareCheckbox = (id) => {
-    if (selectedForCompare.includes(id)) {
-      setSelectedForCompare(
-        selectedForCompare.filter((item) => item !== id)
-      );
-    } else {
-      if (selectedForCompare.length < 2) {
-        setSelectedForCompare([...selectedForCompare, id]);
+    setSelectedForCompare((current) => {
+      if (current.includes(id)) {
+        return current.filter((item) => item !== id);
       }
-    }
+
+      // Do not allow more than two selected products
+      if (current.length >= 2) {
+        return current;
+      }
+
+      return [...current, id];
+    });
   };
 
+  // Remove a product from the comparison page
+  const handleRemoveComparedProduct = (id) => {
+    setSelectedForCompare((current) =>
+      current.filter((item) => item !== id)
+    );
+  };
+
+  // Submit a question about a product
   const handlePostQuestion = (e) => {
     e.preventDefault();
 
@@ -111,6 +125,7 @@ export default function App() {
     setCurrentView("submitted");
   };
 
+  // Confirm a return for the sample order
   const handleConfirmReturn = () => {
     setOrders((prev) =>
       prev.map((ord) =>
@@ -132,14 +147,14 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {/* Universal Desktop Header Navigation */}
+      {/* Main navigation */}
       <Header
         currentView={currentView}
         setCurrentView={handleNavigation}
       />
 
       <main style={styles.main}>
-        {/* VIEW 1: HOME PAGE */}
+        {/* Home */}
         {currentView === "home" && (
           <Home
             searchQuery={searchQuery}
@@ -149,7 +164,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 2: SEARCH RESULTS PAGE */}
+        {/* Product browsing */}
         {currentView === "search" && (
           <ProductBrowsing
             searchQuery={searchQuery}
@@ -168,7 +183,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 3: PRODUCT DETAILS PAGE */}
+        {/* Product details */}
         {currentView === "details" && (
           <ProductDetails
             selectedProduct={selectedProduct}
@@ -176,7 +191,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 4: ASK PREVIOUS BUYERS Q&A */}
+        {/* Messages */}
         {currentView === "ask" && (
           <Messages
             questions={questions}
@@ -187,7 +202,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 5: QUESTION SUBMITTED CONFIRMATION */}
+        {/* Question confirmation */}
         {currentView === "submitted" && (
           <QuestionSubmitted
             lastSubmittedQuestion={lastSubmittedQuestion}
@@ -195,16 +210,17 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 6: PRODUCT COMPARISON MATRIX */}
+        {/* Product comparison */}
         {currentView === "compare" && (
           <Comparison
             selectedForCompare={selectedForCompare}
             handleSelectProduct={handleSelectProduct}
+            onRemoveProduct={handleRemoveComparedProduct}
             setCurrentView={setCurrentView}
           />
         )}
 
-        {/* VIEW 7: MY ORDERS */}
+        {/* My orders */}
         {currentView === "orders" && (
           <Orders
             orders={orders}
@@ -212,12 +228,12 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 8: TRACK ORDER */}
+        {/* Order tracking */}
         {currentView === "track" && (
           <Tracking setCurrentView={setCurrentView} />
         )}
 
-        {/* VIEW 9: RETURN PURCHASE FLOW */}
+        {/* Returns */}
         {currentView === "return" && (
           <Returns
             selectedReturnMethod={selectedReturnMethod}
@@ -227,7 +243,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 10: RETURN CONFIRMATION */}
+        {/* Return confirmation */}
         {currentView === "returnConfirm" && (
           <ReturnConfirmation
             selectedReturnMethod={selectedReturnMethod}
@@ -235,7 +251,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 11: SETTINGS */}
+        {/* Settings */}
         {currentView === "settings" && (
           <Settings setCurrentView={setCurrentView} />
         )}

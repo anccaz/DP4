@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { PRODUCTS } from "./data/products";
 import { styles } from "./styles/styles";
@@ -16,7 +17,7 @@ import Header from "./components/Header";
 
 export default function App() {
   // Navigation & Screen View State
-  const [currentView, setCurrentView] = useState("home"); // home | search | details | ask | submitted | compare | orders | track | return | returnConfirm | settings
+  const [currentView, setCurrentView] = useState("home");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
   const [selectedForCompare, setSelectedForCompare] = useState([]);
@@ -34,9 +35,11 @@ export default function App() {
       a: "I use them on daily walks and find them comfortable. — Verified Buyer ✓",
     },
   ]);
+
   const [newQuestionText, setNewQuestionText] = useState(
-    "Do these shoes run true to size?",
+    "Do these shoes run true to size?"
   );
+
   const [lastSubmittedQuestion, setLastSubmittedQuestion] = useState("");
 
   // Orders & Return State
@@ -53,9 +56,21 @@ export default function App() {
       trackingCode: "TRK-98234710-SH",
     },
   ]);
-  const [selectedReturnMethod, setSelectedReturnMethod] = useState("drop-off");
+
+  const [selectedReturnMethod, setSelectedReturnMethod] =
+    useState("drop-off");
 
   // Navigation & Action Handlers
+
+  // FIX: Clear product selections when returning Home
+  const handleNavigation = (view) => {
+    if (view === "home") {
+      setSelectedForCompare([]);
+    }
+
+    setCurrentView(view);
+  };
+
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
     setCurrentView("search");
@@ -68,7 +83,9 @@ export default function App() {
 
   const toggleCompareCheckbox = (id) => {
     if (selectedForCompare.includes(id)) {
-      setSelectedForCompare(selectedForCompare.filter((item) => item !== id));
+      setSelectedForCompare(
+        selectedForCompare.filter((item) => item !== id)
+      );
     } else {
       if (selectedForCompare.length < 2) {
         setSelectedForCompare([...selectedForCompare, id]);
@@ -78,8 +95,11 @@ export default function App() {
 
   const handlePostQuestion = (e) => {
     e.preventDefault();
+
     if (!newQuestionText.trim()) return;
+
     setLastSubmittedQuestion(newQuestionText);
+
     setQuestions([
       ...questions,
       {
@@ -87,6 +107,7 @@ export default function App() {
         a: "Status: Waiting for a buyer response",
       },
     ]);
+
     setCurrentView("submitted");
   };
 
@@ -102,16 +123,20 @@ export default function App() {
                   ? "Store Drop-off"
                   : "Courier Pickup",
             }
-          : ord,
-      ),
+          : ord
+      )
     );
+
     setCurrentView("returnConfirm");
   };
 
   return (
     <div style={styles.container}>
       {/* Universal Desktop Header Navigation */}
-      <Header currentView={currentView} setCurrentView={setCurrentView} />
+      <Header
+        currentView={currentView}
+        setCurrentView={handleNavigation}
+      />
 
       <main style={styles.main}>
         {/* VIEW 1: HOME PAGE */}
@@ -120,7 +145,7 @@ export default function App() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             handleSearchSubmit={handleSearchSubmit}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
           />
         )}
 
@@ -181,7 +206,10 @@ export default function App() {
 
         {/* VIEW 7: MY ORDERS */}
         {currentView === "orders" && (
-          <Orders orders={orders} setCurrentView={setCurrentView} />
+          <Orders
+            orders={orders}
+            setCurrentView={setCurrentView}
+          />
         )}
 
         {/* VIEW 8: TRACK ORDER */}
@@ -199,7 +227,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 10: RETURN CONFIRMATION WITH PRINTABLE LABEL */}
+        {/* VIEW 10: RETURN CONFIRMATION */}
         {currentView === "returnConfirm" && (
           <ReturnConfirmation
             selectedReturnMethod={selectedReturnMethod}

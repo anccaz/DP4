@@ -19,7 +19,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState("home"); // home | search | details | ask | submitted | compare | orders | track | return | returnConfirm | settings
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
-  const [selectedForCompare, setSelectedForCompare] = useState(["prod-1"]);
+  const [selectedForCompare, setSelectedForCompare] = useState([]);
 
   // Filters State
   const [filterPrice, setFilterPrice] = useState(false);
@@ -173,6 +173,7 @@ export default function App() {
         {/* VIEW 6: PRODUCT COMPARISON MATRIX */}
         {currentView === "compare" && (
           <Comparison
+            selectedForCompare={selectedForCompare}
             handleSelectProduct={handleSelectProduct}
             setCurrentView={setCurrentView}
           />

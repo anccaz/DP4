@@ -1,10 +1,12 @@
-
+import { useState } from "react";
 import { PRODUCTS } from "../data/products";
 import { styles } from "../styles/styles";
 import ProductCard from "../components/ProductCard";
+import ComparisonDock from "../components/ComparisonDock";
 
 export default function ProductBrowsing({
   searchQuery,
+  setSearchQuery,
   filterPrice,
   setFilterPrice,
   filterPickup,
@@ -18,6 +20,9 @@ export default function ProductBrowsing({
   handleSelectProduct,
   setCurrentView,
 }) {
+  // Store search input separately until the user submits it
+  const [draftSearch, setDraftSearch] = useState(searchQuery);
+
   // Find products that match the search
   const filteredProducts = PRODUCTS.filter((product) => {
     const query = searchQuery.trim().toLowerCase();
@@ -25,24 +30,16 @@ export default function ProductBrowsing({
     return (
       product.name.toLowerCase().includes(query) ||
       product.category.toLowerCase().includes(query) ||
-      product.keywords.some((keyword) =>
-        keyword.toLowerCase().includes(query)
-      )
+      product.keywords.some((keyword) => keyword.toLowerCase().includes(query))
     );
   });
-
-  // Exactly two products are required for comparison
-  const canCompare = selectedForCompare.length === 2;
-  const remaining = 2 - selectedForCompare.length;
 
   return (
     <div>
       <span style={styles.subLabel}>Search products</span>
 
       <h1 style={styles.pageHeading}>
-        {searchQuery.trim()
-          ? `Results for "${searchQuery}"`
-          : "All products"}
+        {searchQuery.trim() ? `Results for "${searchQuery}"` : "All products"}
       </h1>
 
       {/* Allow the filter panel and products to stack on small screens */}
@@ -56,7 +53,7 @@ export default function ProductBrowsing({
         {/* Filter sidebar */}
         <div
           style={{
-            flex: "1 1 260px",
+            flex: "0 0 260px",
             minWidth: "min(100%, 260px)",
           }}
         >
@@ -98,9 +95,7 @@ export default function ProductBrowsing({
                 <input
                   type="checkbox"
                   checked={filterPrice}
-                  onChange={(e) =>
-                    setFilterPrice(e.target.checked)
-                  }
+                  onChange={(e) => setFilterPrice(e.target.checked)}
                 />
                 Under $75
               </label>
@@ -132,9 +127,7 @@ export default function ProductBrowsing({
                 <input
                   type="checkbox"
                   checked={filterPickup}
-                  onChange={(e) =>
-                    setFilterPickup(e.target.checked)
-                  }
+                  onChange={(e) => setFilterPickup(e.target.checked)}
                 />
                 Local pickup
               </label>
@@ -152,9 +145,7 @@ export default function ProductBrowsing({
                 <input
                   type="checkbox"
                   checked={filterOnline}
-                  onChange={(e) =>
-                    setFilterOnline(e.target.checked)
-                  }
+                  onChange={(e) => setFilterOnline(e.target.checked)}
                 />
                 Online delivery
               </label>
@@ -185,9 +176,7 @@ export default function ProductBrowsing({
                 <input
                   type="checkbox"
                   checked={filterFreeShipping}
-                  onChange={(e) =>
-                    setFilterFreeShipping(e.target.checked)
-                  }
+                  onChange={(e) => setFilterFreeShipping(e.target.checked)}
                 />
                 Free shipping
               </label>
@@ -212,6 +201,39 @@ export default function ProductBrowsing({
             minWidth: 0,
           }}
         >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearchQuery(draftSearch);
+            }}
+            style={{
+              display: "flex",
+              gap: "10px",
+              marginBottom: "24px",
+            }}
+          >
+            <input
+              type="search"
+              value={draftSearch}
+              onChange={(e) => setDraftSearch(e.target.value)}
+              placeholder="Search for products..."
+              aria-label="Search products"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "14px 16px",
+                fontSize: "16px",
+                border: styles.card.border,
+                borderRadius: "8px",
+                boxShadow: styles.card.boxShadow,
+                boxSizing: "border-box",
+              }}
+            />
+
+            <button type="submit" style={styles.yellowBtn}>
+              Search
+            </button>
+          </form>
           <div
             style={{
               display: "flex",
@@ -229,10 +251,7 @@ export default function ProductBrowsing({
               }}
             >
               {filteredProducts.length}{" "}
-              {filteredProducts.length === 1
-                ? "product"
-                : "products"}{" "}
-              found
+              {filteredProducts.length === 1 ? "product" : "products"} found
             </span>
 
             <span
@@ -255,43 +274,14 @@ export default function ProductBrowsing({
               handleSelectProduct={handleSelectProduct}
             />
           ))}
-
-          {/* Comparison is available after selecting two products */}
-          <button
-            type="button"
-            style={{
-              ...styles.grayBtn,
-              marginTop: "8px",
-              opacity: canCompare ? 1 : 0.5,
-              cursor: canCompare
-                ? "pointer"
-                : "not-allowed",
-            }}
-            disabled={!canCompare}
-            onClick={() => setCurrentView("compare")}
-          >
-            Compare selected products (
-            {selectedForCompare.length}/2)
-          </button>
-
-          {/* Tell users how many more products to select */}
-          <p
-            role="status"
-            aria-live="polite"
-            style={{
-              fontSize: "14px",
-              color: "#475569",
-              marginTop: "12px",
-            }}
-          >
-            {canCompare
-              ? "Ready to compare."
-              : `Select ${remaining} more ${
-                  remaining === 1 ? "product" : "products"
-                } to compare.`}
-          </p>
         </div>
       </div>
+      {/* Floating comparison panel */}
+      <ComparisonDock
+        selectedForCompare={selectedForCompare}
+        toggleCompareCheckbox={toggleCompareCheckbox}
+        setCurrentView={setCurrentView}
+      />
     </div>
   );
 }

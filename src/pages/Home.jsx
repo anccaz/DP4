@@ -29,7 +29,7 @@ export default function Home({
         >
           <input
             type="text"
-            placeholder="Search for walking shoes..."
+            placeholder="Search for walking shoes, phones, lamps, tablets, blankets, canes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{

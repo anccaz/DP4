@@ -51,6 +51,16 @@ export default function ProductCard({
           >
             ${product.price.toFixed(2)}
           </div>
+          <div
+            style={{
+              fontSize: "14px",
+              fontWeight: "600",
+              color: product.inStock ? "#166534" : "#b91c1c",
+              marginTop: "6px",
+            }}
+          >
+            {product.inStock ? "In Stock" : "Out of Stock"}
+          </div>
         </div>
       </div>
 
@@ -59,7 +69,9 @@ export default function ProductCard({
           display: "flex",
           flexDirection: "column",
           gap: "10px",
-          minWidth: "150px",
+          width: "210px",
+          maxWidth: "100%",
+          flexShrink: 1,
         }}
       >
         <button
@@ -71,6 +83,8 @@ export default function ProductCard({
         <button
           style={{
             ...styles.grayBtn,
+            width: "100%",
+            boxSizing: "border-box",
             backgroundColor: selectedForCompare.includes(product.id)
               ? "#cbd5e1"
               : "#eef2f6",
@@ -78,8 +92,8 @@ export default function ProductCard({
           onClick={() => toggleCompareCheckbox(product.id)}
         >
           {selectedForCompare.includes(product.id)
-            ? "Selected ✓"
-            : "Select product"}
+            ? "Remove from Compare"
+            : "Add to Compare"}
         </button>
       </div>
     </div>

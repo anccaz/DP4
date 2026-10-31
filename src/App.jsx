@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { PRODUCTS } from "./data/products";
 import { styles } from "./styles/styles";
+
 import Home from "./pages/Home";
 import ProductBrowsing from "./pages/ProductBrowsing";
 import ProductDetails from "./pages/ProductDetails";
+import BuyingOptions from "./pages/BuyingOptions";
 import Messages from "./pages/Messages";
 import QuestionSubmitted from "./pages/QuestionSubmitted";
 import Comparison from "./pages/Comparison";
@@ -187,6 +189,15 @@ export default function App() {
         {/* Product details */}
         {currentView === "details" && (
           <ProductDetails
+            selectedProduct={selectedProduct}
+            setCurrentView={setCurrentView}
+          />
+        )}
+
+        {/* Buying options */}
+        {currentView === "buyingOptions" && (
+          <BuyingOptions
+            key={selectedProduct.id}
             selectedProduct={selectedProduct}
             setCurrentView={setCurrentView}
           />

@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import ProductBrowsing from "./pages/ProductBrowsing";
 import ProductDetails from "./pages/ProductDetails";
 import BuyingOptions from "./pages/BuyingOptions";
+import PickupLocation from "./pages/PickupLocation";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Messages from "./pages/Messages";
 import QuestionSubmitted from "./pages/QuestionSubmitted";
@@ -18,7 +19,7 @@ import ReturnConfirmation from "./pages/ReturnConfirmation";
 import Settings from "./pages/Settings";
 import Header from "./components/Header";
 
-const DEMO_ORDERS_KEY = "shopping-hub-demo-orders";
+const ORDERS_KEY = "shopping-hub-demo-orders";
 
 const SAMPLE_ORDER = {
   id: "#1042",
@@ -34,10 +35,9 @@ const SAMPLE_ORDER = {
   isDemo: false,
 };
 
-// Read previously created demo orders from the browser.
-function loadDemoOrders() {
+function loadSavedOrders() {
   try {
-    const saved = localStorage.getItem(DEMO_ORDERS_KEY);
+    const saved = localStorage.getItem(ORDERS_KEY);
     const parsed = saved ? JSON.parse(saved) : [];
 
     return Array.isArray(parsed)
@@ -51,18 +51,25 @@ function loadDemoOrders() {
 export default function App() {
   const [currentView, setCurrentView] = useState("home");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
+  const [selectedProduct, setSelectedProduct] = useState(
+    PRODUCTS[0]
+  );
 
-  const [fulfillmentMethod, setFulfillmentMethod] = useState(null);
+  // Buying and fulfillment
+  const [fulfillmentMethod, setFulfillmentMethod] =
+    useState(null);
   const [activeOrderId, setActiveOrderId] = useState(null);
 
-  const [selectedForCompare, setSelectedForCompare] = useState([]);
+  // Product comparison
+  const [selectedForCompare, setSelectedForCompare] =
+    useState([]);
 
   // Filters
   const [filterPrice, setFilterPrice] = useState(false);
   const [filterPickup, setFilterPickup] = useState(false);
   const [filterOnline, setFilterOnline] = useState(false);
-  const [filterFreeShipping, setFilterFreeShipping] = useState(false);
+  const [filterFreeShipping, setFilterFreeShipping] =
+    useState(false);
 
   // Buyer questions
   const [questions, setQuestions] = useState([
@@ -79,36 +86,37 @@ export default function App() {
   const [lastSubmittedQuestion, setLastSubmittedQuestion] =
     useState("");
 
-  // Existing sample order
+  // Orders
   const [sampleOrders, setSampleOrders] = useState([
     SAMPLE_ORDER,
   ]);
 
-  // New demonstration orders
-  const [demoOrders, setDemoOrders] = useState(loadDemoOrders);
+  const [demoOrders, setDemoOrders] = useState(
+    loadSavedOrders
+  );
 
   const [selectedReturnMethod, setSelectedReturnMethod] =
     useState("drop-off");
 
-  // Save demo orders whenever they change.
+  // Persist newly created orders locally.
   useEffect(() => {
     try {
       localStorage.setItem(
-        DEMO_ORDERS_KEY,
+        ORDERS_KEY,
         JSON.stringify(demoOrders)
       );
     } catch (error) {
-      console.warn("Unable to save demo orders:", error);
+      console.warn("Could not save orders:", error);
     }
   }, [demoOrders]);
 
-  // Show newest demo orders above the existing sample order.
   const orders = [...demoOrders, ...sampleOrders];
 
   const activeOrder = orders.find(
     (order) => order.id === activeOrderId
   );
 
+  // General navigation
   const handleNavigation = (view) => {
     if (view === "home") {
       setSelectedForCompare([]);
@@ -117,18 +125,21 @@ export default function App() {
     setCurrentView(view);
   };
 
+  // Product search
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
     setCurrentView("search");
   };
 
-  const handleSelectProduct = (prod) => {
-    setSelectedProduct(prod);
+  // Product details
+  const handleSelectProduct = (product) => {
+    setSelectedProduct(product);
     setFulfillmentMethod(null);
     setActiveOrderId(null);
     setCurrentView("details");
   };
 
+  // Product comparison
   const toggleCompareCheckbox = (id) => {
     setSelectedForCompare((current) => {
       if (current.includes(id)) {
@@ -149,6 +160,7 @@ export default function App() {
     );
   };
 
+  // Buyer questions
   const handlePostQuestion = (e) => {
     e.preventDefault();
 
@@ -167,34 +179,32 @@ export default function App() {
     setCurrentView("submitted");
   };
 
-  // Preserve the existing sample-order return workflow.
+  // Existing returns workflow
   const handleConfirmReturn = () => {
-    setSampleOrders((prev) =>
-      prev.map((ord) =>
-        ord.id === "#1042"
+    setSampleOrders((previous) =>
+      previous.map((order) =>
+        order.id === "#1042"
           ? {
-              ...ord,
+              ...order,
               returnInitiated: true,
               returnMethod:
                 selectedReturnMethod === "drop-off"
                   ? "Store Drop-off"
                   : "Courier Pickup",
             }
-          : ord
+          : order
       )
     );
 
     setCurrentView("returnConfirm");
   };
 
-  // Create a simulated order when the user continues
-  // with a valid buying method.
-  const handleBuyingOptionContinue = (method) => {
-    if (method !== "pickup" && method !== "delivery") {
-      return;
-    }
+  // Create an order only after required information
+  // has been selected.
+  const createOrder = (method, pickupStore = null) => {
+    if (!selectedProduct.inStock) return;
 
-    if (!selectedProduct.inStock) {
+    if (method !== "pickup" && method !== "delivery") {
       return;
     }
 
@@ -202,10 +212,15 @@ export default function App() {
       .toLowerCase()
       .includes("local pickup");
 
-    const deliveryAvailable = Boolean(selectedProduct.shipping);
+    const deliveryAvailable = Boolean(
+      selectedProduct.shipping
+    );
 
     if (method === "pickup" && !pickupAvailable) return;
     if (method === "delivery" && !deliveryAvailable) return;
+
+    // Pickup requires a selected store.
+    if (method === "pickup" && !pickupStore) return;
 
     const freeShipping = selectedProduct.shipping
       .toLowerCase()
@@ -220,7 +235,9 @@ export default function App() {
         : selectedProduct.price + shippingCost;
 
     const newOrder = {
-      id: `DEMO-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      id: `SH-${Date.now()}-${Math.floor(
+        Math.random() * 10000
+      )}`,
       productId: selectedProduct.id,
       productName: selectedProduct.name,
       store: selectedProduct.store,
@@ -233,18 +250,63 @@ export default function App() {
           ? "Pending Pickup"
           : "Pending Delivery",
       createdAt: new Date().toISOString(),
+
+      // Selected pickup information
+      pickupStore: pickupStore
+        ? {
+            id: pickupStore.id,
+            name: pickupStore.name,
+            area: pickupStore.area,
+            hours: pickupStore.hours,
+            pickupEstimate: pickupStore.pickupEstimate,
+            pickupDate: pickupStore.pickupDate,
+          }
+        : null,
+
       returnInitiated: false,
+
+      // Internal flag used to distinguish locally
+      // created orders from the existing sample order.
       isDemo: true,
     };
 
-    setDemoOrders((previous) => [newOrder, ...previous]);
+    setDemoOrders((previous) => [
+      newOrder,
+      ...previous,
+    ]);
 
     setFulfillmentMethod(method);
     setActiveOrderId(newOrder.id);
     setCurrentView("orderConfirmation");
   };
 
-  // Cancel a specific simulated order.
+  // Called when continuing from Buying Options.
+  const handleBuyingOptionContinue = (method) => {
+    if (method === "pickup") {
+      const pickupAvailable = selectedProduct.availability
+        .toLowerCase()
+        .includes("local pickup");
+
+      if (!selectedProduct.inStock || !pickupAvailable) {
+        return;
+      }
+
+      setFulfillmentMethod("pickup");
+      setCurrentView("pickupLocation");
+      return;
+    }
+
+    if (method === "delivery") {
+      createOrder("delivery");
+    }
+  };
+
+  // Called after choosing a pickup location.
+  const handlePickupLocationContinue = (pickupStore) => {
+    createOrder("pickup", pickupStore);
+  };
+
+  // Cancel a locally created order.
   const handleCancelOrder = (orderId) => {
     setDemoOrders((previous) =>
       previous.map((order) =>
@@ -270,7 +332,7 @@ export default function App() {
       handleCancelOrder(activeOrderId);
     }
 
-    setCurrentView("buyingOptions");
+    setCurrentView("orders");
   };
 
   return (
@@ -281,6 +343,7 @@ export default function App() {
       />
 
       <main style={styles.main}>
+        {/* Home */}
         {currentView === "home" && (
           <Home
             searchQuery={searchQuery}
@@ -290,6 +353,7 @@ export default function App() {
           />
         )}
 
+        {/* Browsing */}
         {currentView === "search" && (
           <ProductBrowsing
             searchQuery={searchQuery}
@@ -309,6 +373,7 @@ export default function App() {
           />
         )}
 
+        {/* Product details */}
         {currentView === "details" && (
           <ProductDetails
             selectedProduct={selectedProduct}
@@ -316,6 +381,7 @@ export default function App() {
           />
         )}
 
+        {/* Buying options */}
         {currentView === "buyingOptions" && (
           <BuyingOptions
             key={selectedProduct.id}
@@ -325,6 +391,17 @@ export default function App() {
           />
         )}
 
+        {/* Pickup store selection */}
+        {currentView === "pickupLocation" && (
+          <PickupLocation
+            key={selectedProduct.id}
+            selectedProduct={selectedProduct}
+            onContinue={handlePickupLocationContinue}
+            setCurrentView={setCurrentView}
+          />
+        )}
+
+        {/* Order confirmation */}
         {currentView === "orderConfirmation" &&
           fulfillmentMethod &&
           activeOrder && (
@@ -337,6 +414,7 @@ export default function App() {
             />
           )}
 
+        {/* Buyer messages */}
         {currentView === "ask" && (
           <Messages
             questions={questions}
@@ -347,6 +425,7 @@ export default function App() {
           />
         )}
 
+        {/* Question submitted */}
         {currentView === "submitted" && (
           <QuestionSubmitted
             lastSubmittedQuestion={lastSubmittedQuestion}
@@ -354,6 +433,7 @@ export default function App() {
           />
         )}
 
+        {/* Product comparison */}
         {currentView === "compare" && (
           <Comparison
             selectedForCompare={selectedForCompare}
@@ -363,6 +443,7 @@ export default function App() {
           />
         )}
 
+        {/* My Orders */}
         {currentView === "orders" && (
           <Orders
             orders={orders}
@@ -371,10 +452,12 @@ export default function App() {
           />
         )}
 
+        {/* Tracking */}
         {currentView === "track" && (
           <Tracking setCurrentView={setCurrentView} />
         )}
 
+        {/* Returns */}
         {currentView === "return" && (
           <Returns
             selectedReturnMethod={selectedReturnMethod}
@@ -384,6 +467,7 @@ export default function App() {
           />
         )}
 
+        {/* Return confirmation */}
         {currentView === "returnConfirm" && (
           <ReturnConfirmation
             selectedReturnMethod={selectedReturnMethod}
@@ -391,8 +475,11 @@ export default function App() {
           />
         )}
 
+        {/* Settings */}
         {currentView === "settings" && (
-          <Settings setCurrentView={setCurrentView} />
+          <Settings
+            setCurrentView={setCurrentView}
+          />
         )}
       </main>
     </div>

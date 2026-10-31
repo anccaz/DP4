@@ -16,6 +16,7 @@ export default function OrderConfirmation({
   const [showCancelPrompt, setShowCancelPrompt] = useState(false);
 
   const isPickup = method === "pickup";
+  const pickupStore = order.pickupStore;
 
   const title = isPickup
     ? "Local Pickup Confirmation"
@@ -37,7 +38,7 @@ export default function OrderConfirmation({
       ? null
       : productPrice + shippingCost;
 
-  // Generate a QR code for local pickup.
+  // Generate the pickup QR code using order information.
   useEffect(() => {
     if (!isPickup) return;
 
@@ -48,6 +49,7 @@ export default function OrderConfirmation({
         orderId: reference,
         productId: selectedProduct.id,
         fulfillment: "pickup",
+        storeId: pickupStore?.id ?? null,
       }),
       {
         width: 240,
@@ -70,7 +72,12 @@ export default function OrderConfirmation({
     return () => {
       cancelled = true;
     };
-  }, [isPickup, reference, selectedProduct.id]);
+  }, [
+    isPickup,
+    reference,
+    selectedProduct.id,
+    pickupStore?.id,
+  ]);
 
   const handlePrint = () => {
     window.print();
@@ -85,7 +92,7 @@ export default function OrderConfirmation({
 
   return (
     <div>
-      {/* Page heading */}
+      {/* Screen heading */}
       <div className="pickup-no-print">
         <span style={styles.subLabel}>
           {isPickup ? "Local Pickup" : "Online Delivery"}
@@ -135,7 +142,7 @@ export default function OrderConfirmation({
           Order Confirmation
         </h3>
 
-        {/* Order status */}
+        {/* Current order status */}
         <div
           style={{
             backgroundColor: "#fef3c7",
@@ -150,7 +157,7 @@ export default function OrderConfirmation({
           Status: {order.status}
         </div>
 
-        {/* QR code for local pickup */}
+        {/* Pickup QR code */}
         {isPickup && (
           <div style={{ marginBottom: "24px" }}>
             <h3 style={{ fontSize: "20px" }}>
@@ -182,13 +189,12 @@ export default function OrderConfirmation({
                 color: "#475569",
               }}
             >
-              Keep this QR code with your pickup
-              confirmation.
+              Bring this QR code when collecting your order.
             </p>
           </div>
         )}
 
-        {/* Order reference */}
+        {/* Order number */}
         <div
           style={{
             backgroundColor: "#f1f5f9",
@@ -217,7 +223,7 @@ export default function OrderConfirmation({
           </strong>
         </div>
 
-        {/* Order information */}
+        {/* Order and fulfillment details */}
         <div
           style={{
             textAlign: "left",
@@ -233,27 +239,69 @@ export default function OrderConfirmation({
           </p>
 
           <p>
-            <strong>Store:</strong>{" "}
+            <strong>Sold By:</strong>{" "}
             {selectedProduct.store}
           </p>
 
           <p>
             <strong>Fulfillment Method:</strong>{" "}
-            {isPickup
-              ? "Local Pickup"
-              : "Online Delivery"}
+            {isPickup ? "Local Pickup" : "Online Delivery"}
           </p>
 
           {isPickup ? (
             <>
-              <p>
-                <strong>Pickup Location:</strong>{" "}
-                To be confirmed
-              </p>
+              <div
+                style={{
+                  backgroundColor: "#f8fafc",
+                  padding: "18px",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  margin: "20px 0",
+                }}
+              >
+                <h3
+                  style={{
+                    marginTop: 0,
+                    fontSize: "20px",
+                  }}
+                >
+                  Pickup Location
+                </h3>
 
-              <p>
-                <strong>Pickup Time:</strong>{" "}
-                To be confirmed
+                <p>
+                  <strong>Store:</strong>{" "}
+                  {pickupStore?.name ?? "Not selected"}
+                </p>
+
+                <p>
+                  <strong>Area:</strong>{" "}
+                  {pickupStore?.area ?? "Not available"}
+                </p>
+
+                <p>
+                  <strong>Pickup Estimate:</strong>{" "}
+                  {pickupStore?.pickupEstimate ??
+                    "To be confirmed"}
+                </p>
+
+                <p>
+                  <strong>Store Hours:</strong>{" "}
+                  {pickupStore?.hours ?? "Not available"}
+                </p>
+
+                <p>
+                  <strong>Pickup Fee:</strong> Free
+                </p>
+              </div>
+
+              <p
+                style={{
+                  fontSize: "15px",
+                  color: "#475569",
+                }}
+              >
+                Please bring your pickup confirmation
+                and QR code when visiting the store.
               </p>
             </>
           ) : (
@@ -346,7 +394,7 @@ export default function OrderConfirmation({
         </div>
       </section>
 
-      {/* Actions excluded from printout */}
+      {/* Actions hidden when printing */}
       <div
         className="pickup-no-print"
         style={{

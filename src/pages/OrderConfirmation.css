@@ -1,0 +1,75 @@
+
+/* Shopping Hub — Pickup Confirmation */
+
+/* Receipt appearance on desktop */
+.pickup-receipt {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.pickup-receipt img {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Printing and saving as PDF */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.6in;
+  }
+
+  /* Hide page navigation and action buttons */
+  body:has(.pickup-receipt) header,
+  body:has(.pickup-receipt) nav,
+  .pickup-no-print {
+    display: none !important;
+  }
+
+  /* Remove website background and excess spacing */
+  html,
+  body,
+  #root {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  main:has(.pickup-receipt) {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Format the receipt for paper */
+  .pickup-receipt {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+    border: 1px solid #cccccc !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+    break-inside: avoid;
+  }
+
+  .pickup-receipt img {
+    width: 200px !important;
+    height: 200px !important;
+    margin: 0 auto !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .pickup-receipt h2,
+  .pickup-receipt h3 {
+    color: black !important;
+  }
+
+  .pickup-receipt p {
+    orphans: 3;
+    widows: 3;
+  }
+}

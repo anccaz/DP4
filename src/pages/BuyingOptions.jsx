@@ -5,9 +5,9 @@ import { styles } from "../styles/styles";
 export default function BuyingOptions({
   selectedProduct,
   setCurrentView,
+  onContinue,
 }) {
   const [selectedOption, setSelectedOption] = useState(null);
-  const [confirmed, setConfirmed] = useState(false);
 
   const hasPickup = selectedProduct.availability
     .toLowerCase()
@@ -21,10 +21,10 @@ export default function BuyingOptions({
     .toLowerCase()
     .includes("free");
 
-  // Unknown shipping fees must not be presented as $0.
   const shippingCost = isFreeShipping ? 0 : null;
 
-  const formatPrice = (amount) => `$${amount.toFixed(2)}`;
+  const formatPrice = (amount) =>
+    `$${amount.toFixed(2)}`;
 
   const options = [
     {
@@ -47,25 +47,17 @@ export default function BuyingOptions({
     (option) => option.id === selectedOption
   );
 
-  const selectedTotal =
-    activeOption?.shippingCost != null
-      ? productPrice + activeOption.shippingCost
-      : null;
-
-  // Local pickup goes to the printable QR confirmation.
-  // Online delivery keeps its existing confirmation.
   const handleContinue = () => {
-    if (!activeOption || !activeOption.available) return;
-
-    if (selectedOption === "pickup") {
-      setCurrentView("pickupConfirmation");
-    } else {
-      setConfirmed(true);
+    if (!activeOption || !activeOption.available) {
+      return;
     }
+
+    onContinue(selectedOption);
   };
 
   const renderPriceDetails = (option) => {
-    const knownShipping = option.shippingCost !== null;
+    const knownShipping =
+      option.shippingCost !== null;
 
     return (
       <div
@@ -96,8 +88,11 @@ export default function BuyingOptions({
           }}
         >
           <span>
-            {option.id === "pickup" ? "Pickup fee" : "Shipping"}
+            {option.id === "pickup"
+              ? "Pickup fee"
+              : "Shipping"}
           </span>
+
           <strong>
             {knownShipping
               ? option.shippingCost === 0
@@ -118,8 +113,11 @@ export default function BuyingOptions({
           }}
         >
           <span>
-            {knownShipping ? "Total before tax" : "Subtotal"}
+            {knownShipping
+              ? "Total before tax"
+              : "Subtotal"}
           </span>
+
           <span>
             {formatPrice(
               productPrice + (option.shippingCost ?? 0)
@@ -135,8 +133,8 @@ export default function BuyingOptions({
               marginTop: "8px",
             }}
           >
-            Shipping cost is not yet available and is not
-            included in the subtotal.
+            Shipping cost is not yet available and is
+            not included in the subtotal.
           </p>
         )}
       </div>
@@ -145,22 +143,40 @@ export default function BuyingOptions({
 
   return (
     <div>
-      <span style={styles.subLabel}>Buying Options</span>
+      <span style={styles.subLabel}>
+        Buying Options
+      </span>
 
       <h1 style={styles.pageHeading}>
         Choose how to receive your product
       </h1>
 
-      <div style={{ ...styles.card, marginBottom: "24px" }}>
+      {/* Product summary */}
+      <div
+        style={{
+          ...styles.card,
+          marginBottom: "24px",
+        }}
+      >
         <h2 style={{ marginTop: 0 }}>
           {selectedProduct.name}
         </h2>
 
-        <p style={{ color: "#475569", fontSize: "16px" }}>
+        <p
+          style={{
+            color: "#475569",
+            fontSize: "16px",
+          }}
+        >
           Sold by {selectedProduct.store}
         </p>
 
-        <div style={{ fontSize: "30px", fontWeight: "800" }}>
+        <div
+          style={{
+            fontSize: "30px",
+            fontWeight: "800",
+          }}
+        >
           {formatPrice(productPrice)}
         </div>
 
@@ -169,224 +185,165 @@ export default function BuyingOptions({
         </p>
       </div>
 
-      {!confirmed ? (
-        <>
-          <h2 style={{ fontSize: "24px" }}>
-            Available buying methods
-          </h2>
+      <h2 style={{ fontSize: "24px" }}>
+        Available buying methods
+      </h2>
 
-          <div
-            role="group"
-            aria-label="Choose a buying option"
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {options.map((option) => {
-              const isSelected =
-                selectedOption === option.id;
+      {/* Selectable buying methods */}
+      <div
+        role="group"
+        aria-label="Choose a buying option"
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(260px, 1fr))",
+          gap: "20px",
+        }}
+      >
+        {options.map((option) => {
+          const isSelected =
+            selectedOption === option.id;
 
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={!option.available}
-                  aria-pressed={isSelected}
-                  onClick={() =>
-                    setSelectedOption(option.id)
-                  }
-                  style={{
-                    ...styles.card,
-                    width: "100%",
-                    textAlign: "left",
-                    color: "#1e293b",
-                    cursor: option.available
-                      ? "pointer"
-                      : "not-allowed",
-                    backgroundColor: isSelected
-                      ? "#fff4cf"
-                      : "#ffffff",
-                    border: isSelected
-                      ? "3px solid #d99915"
-                      : "1px solid #cbd5e1",
-                    boxShadow: isSelected
-                      ? "0 0 0 2px rgba(217,153,21,0.12)"
-                      : "none",
-                    transition:
-                      "background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
-                    outlineOffset: "4px",
-                    opacity: option.available ? 1 : 0.65,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    <h3
-                      style={{
-                        fontSize: "24px",
-                        margin: 0,
-                      }}
-                    >
-                      {option.title}
-                    </h3>
-
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        fontSize: "24px",
-                        color: isSelected
-                          ? "#946200"
-                          : "#64748b",
-                      }}
-                    >
-                      {isSelected ? "✓" : "○"}
-                    </span>
-                  </div>
-
-                  <p
-                    style={{
-                      fontSize: "16px",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {option.description}
-                  </p>
-
-                  <p
-                    style={{
-                      fontWeight: "700",
-                      color: option.available
-                        ? "#15803d"
-                        : "#b91c1c",
-                    }}
-                  >
-                    {option.available
-                      ? "Available"
-                      : !selectedProduct.inStock
-                        ? "Product is out of stock"
-                        : "Not available for this product"}
-                  </p>
-
-                  {option.available &&
-                    renderPriceDetails(option)}
-
-                  {isSelected && (
-                    <p
-                      style={{
-                        fontWeight: "700",
-                        color: "#805500",
-                      }}
-                    >
-                      ✓ Selected buying method
-                    </p>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={{ marginTop: "28px" }}>
+          return (
             <button
+              key={option.id}
               type="button"
+              disabled={!option.available}
+              aria-pressed={isSelected}
+              onClick={() =>
+                setSelectedOption(option.id)
+              }
               style={{
-                ...styles.yellowBtn,
-                fontSize: "17px",
-                padding: "16px 28px",
-                opacity: selectedOption ? 1 : 0.55,
-                cursor: selectedOption
+                ...styles.card,
+                width: "100%",
+                textAlign: "left",
+                color: "#1e293b",
+                cursor: option.available
                   ? "pointer"
                   : "not-allowed",
+
+                backgroundColor: isSelected
+                  ? "#fff4cf"
+                  : "#ffffff",
+
+                border: isSelected
+                  ? "3px solid #d99915"
+                  : "1px solid #cbd5e1",
+
+                boxShadow: isSelected
+                  ? "0 0 0 2px rgba(217,153,21,0.12)"
+                  : "none",
+
+                transition:
+                  "background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
+
+                outlineOffset: "4px",
+                opacity: option.available ? 1 : 0.65,
               }}
-              disabled={!selectedOption}
-              onClick={handleContinue}
             >
-              {selectedOption === "pickup"
-                ? "Continue to Pickup Confirmation"
-                : "Continue with selected option"}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "24px",
+                    margin: 0,
+                  }}
+                >
+                  {option.title}
+                </h3>
+
+                <span
+                  aria-hidden="true"
+                  style={{
+                    fontSize: "24px",
+                    color: isSelected
+                      ? "#946200"
+                      : "#64748b",
+                  }}
+                >
+                  {isSelected ? "✓" : "○"}
+                </span>
+              </div>
+
+              <p
+                style={{
+                  fontSize: "16px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {option.description}
+              </p>
+
+              <p
+                style={{
+                  fontWeight: "700",
+                  color: option.available
+                    ? "#15803d"
+                    : "#b91c1c",
+                }}
+              >
+                {option.available
+                  ? "Available"
+                  : !selectedProduct.inStock
+                    ? "Product is out of stock"
+                    : "Not available for this product"}
+              </p>
+
+              {option.available &&
+                renderPriceDetails(option)}
+
+              {isSelected && (
+                <p
+                  style={{
+                    fontWeight: "700",
+                    color: "#805500",
+                  }}
+                >
+                  ✓ Selected buying method
+                </p>
+              )}
             </button>
+          );
+        })}
+      </div>
 
-            <p
-              style={{
-                color: "#64748b",
-                fontSize: "14px",
-              }}
-            >
-              This is a demonstration. No order or payment
-              will be processed.
-            </p>
-          </div>
-        </>
-      ) : (
-        <div
+      {/* Continue */}
+      <div style={{ marginTop: "28px" }}>
+        <button
+          type="button"
           style={{
-            ...styles.card,
-            maxWidth: "680px",
+            ...styles.yellowBtn,
+            fontSize: "17px",
+            padding: "16px 28px",
+            opacity: selectedOption ? 1 : 0.55,
+            cursor: selectedOption
+              ? "pointer"
+              : "not-allowed",
           }}
-          role="status"
+          disabled={!selectedOption}
+          onClick={handleContinue}
         >
-          <h2 style={{ color: "#15803d" }}>
-            ✓ Buying option selected
-          </h2>
+          Continue with selected option
+        </button>
 
-          <h3 style={{ fontSize: "22px" }}>
-            {selectedProduct.name}
-          </h3>
+        <p
+          style={{
+            color: "#64748b",
+            fontSize: "14px",
+          }}
+        >
+          This is a demonstration. No order or
+          payment will be processed.
+        </p>
+      </div>
 
-          <p style={{ fontSize: "18px" }}>
-            Selected method:{" "}
-            <strong>{activeOption?.title}</strong>
-          </p>
-
-          <p style={{ fontSize: "18px" }}>
-            {selectedTotal !== null ? (
-              <>
-                Total before tax:{" "}
-                <strong>
-                  {formatPrice(selectedTotal)}
-                </strong>
-              </>
-            ) : (
-              <>
-                Item subtotal:{" "}
-                <strong>
-                  {formatPrice(productPrice)}
-                </strong>
-                <br />
-                Shipping cost is not specified.
-              </>
-            )}
-          </p>
-
-          <p
-            style={{
-              backgroundColor: "#f1f5f9",
-              padding: "16px",
-              borderRadius: "8px",
-              fontWeight: "600",
-            }}
-          >
-            No order has been placed. This confirms only
-            your preferred buying method.
-          </p>
-
-          <button
-            type="button"
-            style={styles.grayBtn}
-            onClick={() => setConfirmed(false)}
-          >
-            Change selection
-          </button>
-        </div>
-      )}
-
+      {/* Back navigation */}
       <div style={{ marginTop: "24px" }}>
         <button
           type="button"

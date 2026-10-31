@@ -17,12 +17,11 @@ export default function BuyingOptions({
 
   const productPrice = selectedProduct.price;
 
-  // Shipping amounts are not yet provided by the product catalog.
-  // Free shipping is $0; otherwise the cost is unspecified.
   const isFreeShipping = selectedProduct.shipping
     .toLowerCase()
     .includes("free");
 
+  // Unknown shipping fees must not be presented as $0.
   const shippingCost = isFreeShipping ? 0 : null;
 
   const formatPrice = (amount) => `$${amount.toFixed(2)}`;
@@ -49,10 +48,21 @@ export default function BuyingOptions({
   );
 
   const selectedTotal =
-    activeOption?.shippingCost !== null &&
-    activeOption?.shippingCost !== undefined
+    activeOption?.shippingCost != null
       ? productPrice + activeOption.shippingCost
       : null;
+
+  // Local pickup goes to the printable QR confirmation.
+  // Online delivery keeps its existing confirmation.
+  const handleContinue = () => {
+    if (!activeOption || !activeOption.available) return;
+
+    if (selectedOption === "pickup") {
+      setCurrentView("pickupConfirmation");
+    } else {
+      setConfirmed(true);
+    }
+  };
 
   const renderPriceDetails = (option) => {
     const knownShipping = option.shippingCost !== null;
@@ -67,13 +77,27 @@ export default function BuyingOptions({
           lineHeight: "1.8",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "12px",
+          }}
+        >
           <span>Item price</span>
           <strong>{formatPrice(productPrice)}</strong>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-          <span>{option.id === "pickup" ? "Pickup fee" : "Shipping"}</span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "12px",
+          }}
+        >
+          <span>
+            {option.id === "pickup" ? "Pickup fee" : "Shipping"}
+          </span>
           <strong>
             {knownShipping
               ? option.shippingCost === 0
@@ -93,7 +117,9 @@ export default function BuyingOptions({
             fontWeight: "700",
           }}
         >
-          <span>{knownShipping ? "Total before tax" : "Subtotal"}</span>
+          <span>
+            {knownShipping ? "Total before tax" : "Subtotal"}
+          </span>
           <span>
             {formatPrice(
               productPrice + (option.shippingCost ?? 0)
@@ -102,9 +128,15 @@ export default function BuyingOptions({
         </div>
 
         {!knownShipping && (
-          <p style={{ color: "#64748b", fontSize: "14px", marginTop: "8px" }}>
-            Shipping cost is not yet available and is not included
-            in the subtotal.
+          <p
+            style={{
+              color: "#64748b",
+              fontSize: "14px",
+              marginTop: "8px",
+            }}
+          >
+            Shipping cost is not yet available and is not
+            included in the subtotal.
           </p>
         )}
       </div>
@@ -120,7 +152,9 @@ export default function BuyingOptions({
       </h1>
 
       <div style={{ ...styles.card, marginBottom: "24px" }}>
-        <h2 style={{ marginTop: 0 }}>{selectedProduct.name}</h2>
+        <h2 style={{ marginTop: 0 }}>
+          {selectedProduct.name}
+        </h2>
 
         <p style={{ color: "#475569", fontSize: "16px" }}>
           Sold by {selectedProduct.store}
@@ -152,7 +186,8 @@ export default function BuyingOptions({
             }}
           >
             {options.map((option) => {
-              const isSelected = selectedOption === option.id;
+              const isSelected =
+                selectedOption === option.id;
 
               return (
                 <button
@@ -160,7 +195,9 @@ export default function BuyingOptions({
                   type="button"
                   disabled={!option.available}
                   aria-pressed={isSelected}
-                  onClick={() => setSelectedOption(option.id)}
+                  onClick={() =>
+                    setSelectedOption(option.id)
+                  }
                   style={{
                     ...styles.card,
                     width: "100%",
@@ -169,9 +206,17 @@ export default function BuyingOptions({
                     cursor: option.available
                       ? "pointer"
                       : "not-allowed",
+                    backgroundColor: isSelected
+                      ? "#fff4cf"
+                      : "#ffffff",
                     border: isSelected
-                      ? "3px solid #1e293b"
+                      ? "3px solid #d99915"
                       : "1px solid #cbd5e1",
+                    boxShadow: isSelected
+                      ? "0 0 0 2px rgba(217,153,21,0.12)"
+                      : "none",
+                    transition:
+                      "background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
                     outlineOffset: "4px",
                     opacity: option.available ? 1 : 0.65,
                   }}
@@ -184,19 +229,34 @@ export default function BuyingOptions({
                       gap: "12px",
                     }}
                   >
-                    <h3 style={{ fontSize: "24px", margin: 0 }}>
+                    <h3
+                      style={{
+                        fontSize: "24px",
+                        margin: 0,
+                      }}
+                    >
                       {option.title}
                     </h3>
 
                     <span
                       aria-hidden="true"
-                      style={{ fontSize: "24px" }}
+                      style={{
+                        fontSize: "24px",
+                        color: isSelected
+                          ? "#946200"
+                          : "#64748b",
+                      }}
                     >
-                      {isSelected ? "◉" : "○"}
+                      {isSelected ? "✓" : "○"}
                     </span>
                   </div>
 
-                  <p style={{ fontSize: "16px", lineHeight: 1.6 }}>
+                  <p
+                    style={{
+                      fontSize: "16px",
+                      lineHeight: 1.6,
+                    }}
+                  >
                     {option.description}
                   </p>
 
@@ -215,11 +275,17 @@ export default function BuyingOptions({
                         : "Not available for this product"}
                   </p>
 
-                  {option.available && renderPriceDetails(option)}
+                  {option.available &&
+                    renderPriceDetails(option)}
 
                   {isSelected && (
-                    <p style={{ fontWeight: "700" }}>
-                      ✓ Selected
+                    <p
+                      style={{
+                        fontWeight: "700",
+                        color: "#805500",
+                      }}
+                    >
+                      ✓ Selected buying method
                     </p>
                   )}
                 </button>
@@ -240,20 +306,30 @@ export default function BuyingOptions({
                   : "not-allowed",
               }}
               disabled={!selectedOption}
-              onClick={() => setConfirmed(true)}
+              onClick={handleContinue}
             >
-              Continue with selected option
+              {selectedOption === "pickup"
+                ? "Continue to Pickup Confirmation"
+                : "Continue with selected option"}
             </button>
 
-            <p style={{ color: "#64748b", fontSize: "14px" }}>
-              This is a demonstration. No order or payment will
-              be processed.
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "14px",
+              }}
+            >
+              This is a demonstration. No order or payment
+              will be processed.
             </p>
           </div>
         </>
       ) : (
         <div
-          style={{ ...styles.card, maxWidth: "680px" }}
+          style={{
+            ...styles.card,
+            maxWidth: "680px",
+          }}
           role="status"
         >
           <h2 style={{ color: "#15803d" }}>
@@ -273,12 +349,16 @@ export default function BuyingOptions({
             {selectedTotal !== null ? (
               <>
                 Total before tax:{" "}
-                <strong>{formatPrice(selectedTotal)}</strong>
+                <strong>
+                  {formatPrice(selectedTotal)}
+                </strong>
               </>
             ) : (
               <>
                 Item subtotal:{" "}
-                <strong>{formatPrice(productPrice)}</strong>
+                <strong>
+                  {formatPrice(productPrice)}
+                </strong>
                 <br />
                 Shipping cost is not specified.
               </>
@@ -293,8 +373,8 @@ export default function BuyingOptions({
               fontWeight: "600",
             }}
           >
-            No order has been placed. This confirms only your
-            preferred buying method.
+            No order has been placed. This confirms only
+            your preferred buying method.
           </p>
 
           <button

@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import ProductBrowsing from "./pages/ProductBrowsing";
 import ProductDetails from "./pages/ProductDetails";
 import BuyingOptions from "./pages/BuyingOptions";
+import PickupConfirmation from "./pages/PickupConfirmation";
 import Messages from "./pages/Messages";
 import QuestionSubmitted from "./pages/QuestionSubmitted";
 import Comparison from "./pages/Comparison";
@@ -18,12 +19,12 @@ import Settings from "./pages/Settings";
 import Header from "./components/Header";
 
 export default function App() {
-  // Navigation and current product information
+  // Navigation and current product
   const [currentView, setCurrentView] = useState("home");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(PRODUCTS[0]);
 
-  // Start with no products selected for comparison
+  // Product comparison
   const [selectedForCompare, setSelectedForCompare] = useState([]);
 
   // Product filters
@@ -32,7 +33,7 @@ export default function App() {
   const [filterOnline, setFilterOnline] = useState(false);
   const [filterFreeShipping, setFilterFreeShipping] = useState(false);
 
-  // Questions and answers
+  // Buyer questions
   const [questions, setQuestions] = useState([
     {
       q: "Are these comfortable for daily walking?",
@@ -46,7 +47,7 @@ export default function App() {
 
   const [lastSubmittedQuestion, setLastSubmittedQuestion] = useState("");
 
-  // Orders and returns
+  // Sample orders
   const [orders, setOrders] = useState([
     {
       id: "#1042",
@@ -64,7 +65,6 @@ export default function App() {
   const [selectedReturnMethod, setSelectedReturnMethod] =
     useState("drop-off");
 
-  // Clear comparison selections when returning Home
   const handleNavigation = (view) => {
     if (view === "home") {
       setSelectedForCompare([]);
@@ -73,26 +73,22 @@ export default function App() {
     setCurrentView(view);
   };
 
-  // Open the product search page
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
     setCurrentView("search");
   };
 
-  // Open details for the chosen product
   const handleSelectProduct = (prod) => {
     setSelectedProduct(prod);
     setCurrentView("details");
   };
 
-  // Allow users to select or deselect up to two products
   const toggleCompareCheckbox = (id) => {
     setSelectedForCompare((current) => {
       if (current.includes(id)) {
         return current.filter((item) => item !== id);
       }
 
-      // Do not allow more than two selected products
       if (current.length >= 2) {
         return current;
       }
@@ -101,14 +97,12 @@ export default function App() {
     });
   };
 
-  // Remove a product from the comparison page
   const handleRemoveComparedProduct = (id) => {
     setSelectedForCompare((current) =>
       current.filter((item) => item !== id)
     );
   };
 
-  // Submit a question about a product
   const handlePostQuestion = (e) => {
     e.preventDefault();
 
@@ -127,7 +121,6 @@ export default function App() {
     setCurrentView("submitted");
   };
 
-  // Confirm a return for the sample order
   const handleConfirmReturn = () => {
     setOrders((prev) =>
       prev.map((ord) =>
@@ -149,7 +142,6 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {/* Main navigation */}
       <Header
         currentView={currentView}
         setCurrentView={handleNavigation}
@@ -203,7 +195,15 @@ export default function App() {
           />
         )}
 
-        {/* Messages */}
+        {/* Local pickup QR confirmation */}
+        {currentView === "pickupConfirmation" && (
+          <PickupConfirmation
+            selectedProduct={selectedProduct}
+            setCurrentView={setCurrentView}
+          />
+        )}
+
+        {/* Buyer messages */}
         {currentView === "ask" && (
           <Messages
             questions={questions}
@@ -232,7 +232,7 @@ export default function App() {
           />
         )}
 
-        {/* My orders */}
+        {/* Orders */}
         {currentView === "orders" && (
           <Orders
             orders={orders}
@@ -240,7 +240,7 @@ export default function App() {
           />
         )}
 
-        {/* Order tracking */}
+        {/* Tracking */}
         {currentView === "track" && (
           <Tracking setCurrentView={setCurrentView} />
         )}

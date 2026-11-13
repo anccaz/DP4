@@ -54,6 +54,12 @@ export default function QuestionSubmitted({
           >
             Back to product
           </button>
+          <button
+            style={styles.grayBtn}
+            onClick={() => setCurrentView("myMessages")}
+          >
+            View my messages
+          </button>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { styles } from "../styles/styles";
 
 export default function Messages({
+  selectedProduct,
   questions,
   newQuestionText,
   setNewQuestionText,
@@ -9,7 +10,8 @@ export default function Messages({
 }) {
   return (
     <div>
-      <h1 style={{ ...styles.pageHeading, marginTop: "0" }}>
+      <span style={styles.subLabel}>{selectedProduct.name}</span>
+      <h1 style={{ ...styles.pageHeading, marginTop: "6px" }}>
         Ask Previous Buyers
       </h1>
 
@@ -33,7 +35,7 @@ export default function Messages({
 
           {questions.map((item, index) => (
             <div
-              key={index}
+              key={item.id ?? index}
               style={{
                 backgroundColor: "#f1f5f9",
                 borderRadius: "12px",
@@ -51,15 +53,32 @@ export default function Messages({
                 Q: {item.q}
               </div>
               <div style={{ fontSize: "14px", color: "#334155" }}>
-                {item.a.includes("Verified Buyer") ? (
+                {item.answer ? (
                   <>
-                    A: I use them on daily walks and find them comfortable. —{" "}
-                    <span style={{ color: "#16a34a", fontWeight: "700" }}>
-                      Verified Buyer ✓
-                    </span>
+                    A: {item.answer}
+                    {item.verified && (
+                      <>
+                        {" "}—{" "}
+                        <span style={{ color: "#16a34a", fontWeight: "700" }}>
+                          Verified Buyer ✓
+                        </span>
+                      </>
+                    )}
                   </>
                 ) : (
-                  item.a
+                  `Status: ${item.status}`
+                )}
+                {item.isUser && (
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      color: "#92400e",
+                    }}
+                  >
+                    (Your question)
+                  </span>
                 )}
               </div>
             </div>

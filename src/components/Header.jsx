@@ -26,10 +26,8 @@ export default function Header({ currentView, setCurrentView }) {
           My Orders
         </span>
         <span
-          style={styles.navLink(
-            currentView === "ask" || currentView === "submitted",
-          )}
-          onClick={() => setCurrentView("ask")}
+          style={styles.navLink(currentView === "myMessages")}
+          onClick={() => setCurrentView("myMessages")}
         >
           Messages
         </span>

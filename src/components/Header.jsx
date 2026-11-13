@@ -34,6 +34,12 @@ export default function Header({ currentView, setCurrentView }) {
           Messages
         </span>
         <span
+          style={styles.navLink(currentView === "login")}
+          onClick={() => setCurrentView("login")}
+        >
+          Login
+        </span>
+        <span
           style={styles.navLink(currentView === "settings")}
           onClick={() => setCurrentView("settings")}
         >

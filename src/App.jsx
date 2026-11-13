@@ -4,6 +4,7 @@ import { PRODUCTS } from "./data/products";
 import { styles } from "./styles/styles";
 
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 import ProductBrowsing from "./pages/ProductBrowsing";
 import ProductDetails from "./pages/ProductDetails";
 import BuyingOptions from "./pages/BuyingOptions";
@@ -349,6 +350,13 @@ export default function App() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             handleSearchSubmit={handleSearchSubmit}
+            setCurrentView={handleNavigation}
+          />
+        )}
+
+        {/* Login */}
+        {currentView === "login" && (
+          <Login
             setCurrentView={handleNavigation}
           />
         )}

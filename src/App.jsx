@@ -95,6 +95,9 @@ function loadSavedOrders() {
 
 export default function App() {
   const [currentView, setCurrentView] = useState("home");
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [logoutMessage, setLogoutMessage] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(
     PRODUCTS[0]
@@ -184,12 +187,46 @@ export default function App() {
 
   // General navigation
   const handleNavigation = (view) => {
-    if (view === "home") {
-      setSelectedForCompare([]);
-    }
+  setLogoutMessage("");
 
-    setCurrentView(view);
-  };
+  if (view === "home") {
+    setSelectedForCompare([]);
+  }
+
+  setCurrentView(view);
+};
+
+  // Sign in
+const handleLogin = (email) => {
+  setIsLoggedIn(true);
+  setLogoutMessage("");
+
+  setAccount((previous) => ({
+    ...previous,
+    email: email,
+  }));
+
+  setCurrentView("home");
+};
+
+// Sign out
+// Show the confirmation before signing out
+const handleLogout = () => {
+  setShowLogoutConfirmation(true);
+};
+
+// Cancel signing out
+const cancelLogout = () => {
+  setShowLogoutConfirmation(false);
+};
+
+// Confirm signing out
+const confirmLogout = () => {
+  setIsLoggedIn(false);
+  setShowLogoutConfirmation(false);
+  setLogoutMessage("You have successfully signed out!");
+  setCurrentView("home");
+};
 
   // Product search
   const handleSearchSubmit = (e) => {
@@ -419,7 +456,74 @@ export default function App() {
       <Header
         currentView={currentView}
         setCurrentView={handleNavigation}
+        isLoggedIn={isLoggedIn}
+        onLogout={handleLogout}
       />
+
+      {logoutMessage && (
+  <div
+    role="status"
+    style={{
+      backgroundColor: "#dcfce7",
+      color: "#166534",
+      padding: "12px",
+      textAlign: "center",
+      borderRadius: "8px",
+      margin: "12px auto",
+      maxWidth: "500px",
+    }}
+  >
+    {logoutMessage}
+  </div>
+)}
+
+  {showLogoutConfirmation && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    }}
+  >
+    <div
+      style={{
+        backgroundColor: "white",
+        padding: "30px",
+        borderRadius: "12px",
+        width: "350px",
+        textAlign: "center",
+        boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+      }}
+    >
+      <h2>Sign Out?</h2>
+
+      <p>Are you sure you want to sign out of your Shopping Hub account?</p>
+
+      <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+        <button
+          onClick={cancelLogout}
+          style={{ ...styles.grayBtn, flex: 1 }}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={confirmLogout}
+          style={{ ...styles.yellowBtn, flex: 1 }}
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       <main style={styles.main}>
         {/* Home */}
@@ -436,6 +540,7 @@ export default function App() {
         {currentView === "login" && (
           <Login
             setCurrentView={handleNavigation}
+            onLogin={handleLogin}
           />
         )}
 

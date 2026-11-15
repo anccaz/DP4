@@ -28,9 +28,11 @@ import { TEXT_SIZES } from "./data/settings";
 import Header from "./components/Header";
 
 const ORDERS_KEY = "shopping-hub-demo-orders";
+const SAMPLE_ORDER_KEY = "shopping-hub-sample-orders";
 const PREFERENCES_KEY = "shopping-hub-preferences";
 const ACCOUNT_KEY = "shopping-hub-account";
 const QUESTIONS_KEY = "shopping-hub-my-questions";
+const NAVIGATION_KEY = "shopping-hub-navigation";
 
 const DEFAULT_PREFERENCES = {
   textSize: "standard",
@@ -38,23 +40,65 @@ const DEFAULT_PREFERENCES = {
   recommendations: true,
 };
 
-// Demo account. Stored locally in the browser only.
 const DEFAULT_ACCOUNT = {
   name: "Demo Shopper",
   email: "demo@shoppinghub.com",
   phone: "",
 };
 
+const SAMPLE_ORDER = {
+  id: "#1042",
+  productName: "Comfort Walking Shoes",
+  store: "Sample Store",
+  deliveryDate: "Delivered October 10",
+  totalPaid: 59.99,
+  status: "Delivered",
+  returnInitiated: false,
+  returnMethod: null,
+  returnReference: null,
+  trackingCode: "TRK-98234710-SH",
+  method: "delivery",
+  isDemo: false,
+};
+
+const VALID_VIEWS = [
+  "home",
+  "login",
+  "search",
+  "details",
+  "buyingOptions",
+  "pickupLocation",
+  "orderConfirmation",
+  "ask",
+  "myMessages",
+  "submitted",
+  "compare",
+  "orders",
+  "track",
+  "return",
+  "returnConfirm",
+  "settings",
+];
+
 function loadSaved(key, defaults) {
   try {
     const saved = localStorage.getItem(key);
     const parsed = saved ? JSON.parse(saved) : null;
-
     return parsed && typeof parsed === "object"
       ? { ...defaults, ...parsed }
       : defaults;
   } catch {
     return defaults;
+  }
+}
+
+function loadArray(key, fallback = []) {
+  try {
+    const saved = localStorage.getItem(key);
+    const parsed = saved ? JSON.parse(saved) : null;
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
   }
 }
 
@@ -66,53 +110,80 @@ function save(key, value) {
   }
 }
 
-const SAMPLE_ORDER = {
-  id: "#1042",
-  productName: "Comfort Walking Shoes",
-  store: "Sample Store",
-  deliveryDate: "Delivered October 10",
-  totalPaid: 59.99,
-  status: "Delivered",
-  returnInitiated: false,
-  returnMethod: "Drop-off at local store",
-  trackingCode: "TRK-98234710-SH",
-  method: "delivery",
-  isDemo: false,
-};
-
-function loadSavedOrders() {
+function loadNavigation() {
   try {
-    const saved = localStorage.getItem(ORDERS_KEY);
-    const parsed = saved ? JSON.parse(saved) : [];
+    const saved = sessionStorage.getItem(NAVIGATION_KEY);
+    const parsed = saved ? JSON.parse(saved) : {};
 
-    return Array.isArray(parsed)
-      ? parsed.filter((order) => order.isDemo === true)
-      : [];
+    return {
+      currentView: VALID_VIEWS.includes(parsed.currentView)
+        ? parsed.currentView
+        : "home",
+      selectedProductId: parsed.selectedProductId,
+      activeOrderId: parsed.activeOrderId ?? null,
+      fulfillmentMethod: parsed.fulfillmentMethod ?? null,
+      selectedReturnOrderId: parsed.selectedReturnOrderId ?? null,
+      selectedForCompare: Array.isArray(parsed.selectedForCompare)
+        ? parsed.selectedForCompare.slice(0, 2)
+        : [],
+      searchQuery: parsed.searchQuery ?? "",
+    };
   } catch {
-    return [];
+    return {
+      currentView: "home",
+      selectedProductId: PRODUCTS[0].id,
+      activeOrderId: null,
+      fulfillmentMethod: null,
+      selectedReturnOrderId: null,
+      selectedForCompare: [],
+      searchQuery: "",
+    };
   }
 }
 
+function isReturnEligible(order) {
+  return Boolean(
+    order &&
+    order.status === "Delivered" &&
+    !order.returnInitiated
+  );
+}
+
 export default function App() {
-  const [currentView, setCurrentView] = useState("home");
-  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [initialNavigation] = useState(loadNavigation);
+
+  const [currentView, setCurrentView] = useState(
+    initialNavigation.currentView
+  );
+  const [showLogoutConfirmation, setShowLogoutConfirmation] =
+    useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(
-    PRODUCTS[0]
+
+  const [searchQuery, setSearchQuery] = useState(
+    initialNavigation.searchQuery
   );
 
-  // Buying and fulfillment
-  const [fulfillmentMethod, setFulfillmentMethod] =
-    useState(null);
-  const [activeOrderId, setActiveOrderId] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(
+    () =>
+      PRODUCTS.find(
+        (product) =>
+          product.id === initialNavigation.selectedProductId
+      ) || PRODUCTS[0]
+  );
 
-  // Product comparison
-  const [selectedForCompare, setSelectedForCompare] =
-    useState([]);
+  const [fulfillmentMethod, setFulfillmentMethod] = useState(
+    initialNavigation.fulfillmentMethod
+  );
+  const [activeOrderId, setActiveOrderId] = useState(
+    initialNavigation.activeOrderId
+  );
 
-  // Filters
+  const [selectedForCompare, setSelectedForCompare] = useState(
+    initialNavigation.selectedForCompare
+  );
+
+  // Search filters
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [filterPickup, setFilterPickup] = useState(false);
@@ -123,53 +194,60 @@ export default function App() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterRating, setFilterRating] = useState(false);
 
-  // Buyer questions. Only the user's own questions are saved.
+  // Buyer questions
   const [userQuestions, setUserQuestions] = useState(() => {
     const saved = loadSaved(QUESTIONS_KEY, { items: [] });
     return Array.isArray(saved.items) ? saved.items : [];
   });
 
-  useEffect(
-    () => save(QUESTIONS_KEY, { items: userQuestions }),
-    [userQuestions]
-  );
+  useEffect(() => {
+    save(QUESTIONS_KEY, { items: userQuestions });
+  }, [userQuestions]);
 
-  const productQuestions = [...SEED_QUESTIONS, ...userQuestions].filter(
+  const productQuestions = [
+    ...SEED_QUESTIONS,
+    ...userQuestions,
+  ].filter(
     (question) => question.productId === selectedProduct.id
   );
 
   const [newQuestionText, setNewQuestionText] = useState(
     "Do these shoes run true to size?"
   );
-
   const [lastSubmittedQuestion, setLastSubmittedQuestion] =
     useState("");
 
   // Orders
-  const [sampleOrders, setSampleOrders] = useState([
-    SAMPLE_ORDER,
-  ]);
+  const [sampleOrders, setSampleOrders] = useState(() => {
+    const saved = loadArray(SAMPLE_ORDER_KEY, [SAMPLE_ORDER]);
+    const existing = saved.find(
+      (order) => order.id === SAMPLE_ORDER.id
+    );
+    return [existing || SAMPLE_ORDER];
+  });
 
-  const [demoOrders, setDemoOrders] = useState(
-    loadSavedOrders
+  const [demoOrders, setDemoOrders] = useState(() =>
+    loadArray(ORDERS_KEY).filter(
+      (order) => order.isDemo === true
+    )
   );
+
+  const [selectedReturnOrderId, setSelectedReturnOrderId] =
+    useState(initialNavigation.selectedReturnOrderId);
 
   const [selectedReturnMethod, setSelectedReturnMethod] =
     useState("drop-off");
 
-  // Persist newly created orders locally.
+  // Persist orders
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        ORDERS_KEY,
-        JSON.stringify(demoOrders)
-      );
-    } catch (error) {
-      console.warn("Could not save orders:", error);
-    }
+    save(ORDERS_KEY, demoOrders);
   }, [demoOrders]);
 
-  // Settings and account
+  useEffect(() => {
+    save(SAMPLE_ORDER_KEY, sampleOrders);
+  }, [sampleOrders]);
+
+  // Preferences
   const [preferences, setPreferences] = useState(() =>
     loadSaved(PREFERENCES_KEY, DEFAULT_PREFERENCES)
   );
@@ -177,11 +255,17 @@ export default function App() {
     loadSaved(ACCOUNT_KEY, DEFAULT_ACCOUNT)
   );
 
-  useEffect(() => save(PREFERENCES_KEY, preferences), [preferences]);
-  useEffect(() => save(ACCOUNT_KEY, account), [account]);
+  useEffect(() => {
+    save(PREFERENCES_KEY, preferences);
+  }, [preferences]);
+
+  useEffect(() => {
+    save(ACCOUNT_KEY, account);
+  }, [account]);
 
   const textZoom =
-    TEXT_SIZES[preferences.textSize]?.zoom ?? TEXT_SIZES.standard.zoom;
+    TEXT_SIZES[preferences.textSize]?.zoom ??
+    TEXT_SIZES.standard.zoom;
 
   const orders = [...demoOrders, ...sampleOrders];
 
@@ -189,56 +273,127 @@ export default function App() {
     (order) => order.id === activeOrderId
   );
 
-  // General navigation
+  const selectedReturnOrder = orders.find(
+    (order) => order.id === selectedReturnOrderId
+  );
+
+  // Save navigation so refreshing keeps the current screen
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        NAVIGATION_KEY,
+        JSON.stringify({
+          currentView,
+          selectedProductId: selectedProduct.id,
+          activeOrderId,
+          fulfillmentMethod,
+          selectedReturnOrderId,
+          selectedForCompare,
+          searchQuery,
+        })
+      );
+    } catch (error) {
+      console.warn("Could not save navigation:", error);
+    }
+  }, [
+    currentView,
+    selectedProduct,
+    activeOrderId,
+    fulfillmentMethod,
+    selectedReturnOrderId,
+    selectedForCompare,
+    searchQuery,
+  ]);
+
+  // Confirm that restored pages still have valid data
+  useEffect(() => {
+    if (
+      currentView === "orderConfirmation" &&
+      (!activeOrder || !fulfillmentMethod)
+    ) {
+      setCurrentView("orders");
+    }
+
+    if (
+      ["return", "returnConfirm"].includes(currentView) &&
+      !selectedReturnOrder
+    ) {
+      setCurrentView("orders");
+    }
+
+    if (
+      currentView === "returnConfirm" &&
+      selectedReturnOrder &&
+      !selectedReturnOrder.returnInitiated
+    ) {
+      setCurrentView("orders");
+    }
+
+    if (
+      currentView === "return" &&
+      selectedReturnOrder &&
+      !isReturnEligible(selectedReturnOrder)
+    ) {
+      setCurrentView("orders");
+    }
+  }, [
+    currentView,
+    activeOrder,
+    fulfillmentMethod,
+    selectedReturnOrder,
+  ]);
+
+  // Navigation
   const handleNavigation = (view) => {
-  setLogoutMessage("");
+    setLogoutMessage("");
 
-  if (view === "home") {
-    setSelectedForCompare([]);
-  }
+    if (view === "home") {
+      setSelectedForCompare([]);
+    }
 
-  setCurrentView(view);
-};
+    if (
+      ["return", "returnConfirm"].includes(view) &&
+      !selectedReturnOrderId
+    ) {
+      setCurrentView("orders");
+      return;
+    }
 
-  // Sign in
-const handleLogin = (email) => {
-  setIsLoggedIn(true);
-  setLogoutMessage("");
+    setCurrentView(view);
+  };
 
-  setAccount((previous) => ({
-    ...previous,
-    email: email,
-  }));
+  // Login
+  const handleLogin = (email) => {
+    setIsLoggedIn(true);
+    setLogoutMessage("");
+    setAccount((previous) => ({
+      ...previous,
+      email,
+    }));
+    setCurrentView("home");
+  };
 
-  setCurrentView("home");
-};
+  const handleLogout = () => {
+    setShowLogoutConfirmation(true);
+  };
 
-// Sign out
-// Show the confirmation before signing out
-const handleLogout = () => {
-  setShowLogoutConfirmation(true);
-};
+  const cancelLogout = () => {
+    setShowLogoutConfirmation(false);
+  };
 
-// Cancel signing out
-const cancelLogout = () => {
-  setShowLogoutConfirmation(false);
-};
+  const confirmLogout = () => {
+    setIsLoggedIn(false);
+    setShowLogoutConfirmation(false);
+    setLogoutMessage("You have successfully signed out!");
+    setCurrentView("home");
+  };
 
-// Confirm signing out
-const confirmLogout = () => {
-  setIsLoggedIn(false);
-  setShowLogoutConfirmation(false);
-  setLogoutMessage("You have successfully signed out!");
-  setCurrentView("home");
-};
-
-  // Product search
-  const handleSearchSubmit = (e) => {
-    if (e) e.preventDefault();
+  // Search
+  const handleSearchSubmit = (event) => {
+    if (event) event.preventDefault();
     setCurrentView("search");
   };
 
-  // Product details
   const handleSelectProduct = (product) => {
     setSelectedProduct(product);
     setFulfillmentMethod(null);
@@ -246,17 +401,14 @@ const confirmLogout = () => {
     setCurrentView("details");
   };
 
-  // Product comparison
+  // Comparison
   const toggleCompareCheckbox = (id) => {
     setSelectedForCompare((current) => {
       if (current.includes(id)) {
         return current.filter((item) => item !== id);
       }
 
-      if (current.length >= 2) {
-        return current;
-      }
-
+      if (current.length >= 2) return current;
       return [...current, id];
     });
   };
@@ -267,9 +419,9 @@ const confirmLogout = () => {
     );
   };
 
-  // Buyer questions
-  const handlePostQuestion = (e) => {
-    e.preventDefault();
+  // Questions
+  const handlePostQuestion = (event) => {
+    event.preventDefault();
 
     const text = newQuestionText.trim();
     if (!text || selectedProduct.id !== QA_PRODUCT_ID) return;
@@ -299,45 +451,92 @@ const confirmLogout = () => {
     );
   };
 
-  // Existing returns workflow
-  const handleConfirmReturn = () => {
-    setSampleOrders((previous) =>
-      previous.map((order) =>
-        order.id === "#1042"
-          ? {
-            ...order,
-            returnInitiated: true,
-            returnMethod:
-              selectedReturnMethod === "drop-off"
-                ? "Store Drop-off"
-                : "Courier Pickup",
-          }
-          : order
-      )
-    );
+  // Returns
+  const handleStartReturn = (orderId) => {
+    const order = orders.find((item) => item.id === orderId);
+    if (!isReturnEligible(order)) return;
 
+    setSelectedReturnOrderId(orderId);
+    setSelectedReturnMethod("drop-off");
+    setCurrentView("return");
+  };
+
+  const handleViewReturn = (orderId) => {
+    const order = orders.find((item) => item.id === orderId);
+    if (!order?.returnInitiated) return;
+
+    setSelectedReturnOrderId(orderId);
+    setSelectedReturnMethod(
+      order.returnMethod === "Courier Pickup"
+        ? "pickup"
+        : "drop-off"
+    );
     setCurrentView("returnConfirm");
   };
 
-  // Create an order only after required information
-  // has been selected.
+  const handleConfirmReturn = () => {
+    if (!isReturnEligible(selectedReturnOrder)) return;
+
+    const orderId = selectedReturnOrder.id;
+    const returnMethod =
+      selectedReturnMethod === "drop-off"
+        ? "Store Drop-off"
+        : "Courier Pickup";
+
+    const returnReference = `RMA-${Date.now()}-${Math.floor(
+      Math.random() * 10000
+    )}`;
+
+    const updateOrder = (order) =>
+      order.id === orderId && isReturnEligible(order)
+        ? {
+            ...order,
+            returnInitiated: true,
+            returnMethod,
+            returnReference,
+            returnRequestedAt: new Date().toISOString(),
+          }
+        : order;
+
+    setSampleOrders((previous) => previous.map(updateOrder));
+    setDemoOrders((previous) => previous.map(updateOrder));
+    setCurrentView("returnConfirm");
+  };
+
+  // Update order status
+  const handleMarkDelivered = (orderId) => {
+    setDemoOrders((previous) =>
+      previous.map((order) =>
+        order.id === orderId &&
+        ["Pending Delivery", "Pending Pickup"].includes(
+          order.status
+        )
+          ? {
+              ...order,
+              status: "Delivered",
+              deliveryDate: `Delivered ${new Date().toLocaleDateString()}`,
+            }
+          : order
+      )
+    );
+  };
+
+  // Buying
   const createOrder = (method, pickupStore = null) => {
     if (!selectedProduct.inStock) return;
+    if (!["pickup", "delivery"].includes(method)) return;
 
-    if (method !== "pickup" && method !== "delivery") {
+    if (method === "pickup" && !selectedProduct.localPickup) {
       return;
     }
 
-    const pickupAvailable = selectedProduct.localPickup
+    if (
+      method === "delivery" &&
+      !selectedProduct.onlineDelivery
+    ) {
+      return;
+    }
 
-    const deliveryAvailable = Boolean(
-      selectedProduct.onlineDelivery
-    );
-
-    if (method === "pickup" && !pickupAvailable) return;
-    if (method === "delivery" && !deliveryAvailable) return;
-
-    // Pickup requires a selected store.
     if (method === "pickup" && !pickupStore) return;
 
     const freeShipping = selectedProduct.shipping
@@ -368,42 +567,34 @@ const confirmLogout = () => {
           ? "Pending Pickup"
           : "Pending Delivery",
       createdAt: new Date().toISOString(),
-
-      // Selected pickup information
       pickupStore: pickupStore
         ? {
-          id: pickupStore.id,
-          name: pickupStore.name,
-          area: pickupStore.area,
-          hours: pickupStore.hours,
-          pickupEstimate: pickupStore.pickupEstimate,
-          pickupDate: pickupStore.pickupDate,
-        }
+            id: pickupStore.id,
+            name: pickupStore.name,
+            area: pickupStore.area,
+            hours: pickupStore.hours,
+            pickupEstimate: pickupStore.pickupEstimate,
+            pickupDate: pickupStore.pickupDate,
+          }
         : null,
-
       returnInitiated: false,
-
-      // Internal flag used to distinguish locally
-      // created orders from the existing sample order.
+      returnMethod: null,
+      returnReference: null,
       isDemo: true,
     };
 
-    setDemoOrders((previous) => [
-      newOrder,
-      ...previous,
-    ]);
-
+    setDemoOrders((previous) => [newOrder, ...previous]);
     setFulfillmentMethod(method);
     setActiveOrderId(newOrder.id);
     setCurrentView("orderConfirmation");
   };
 
-  // Called when continuing from Buying Options.
   const handleBuyingOptionContinue = (method) => {
     if (method === "pickup") {
-      const pickupAvailable = selectedProduct.localPickup
-
-      if (!selectedProduct.inStock || !pickupAvailable) {
+      if (
+        !selectedProduct.inStock ||
+        !selectedProduct.localPickup
+      ) {
         return;
       }
 
@@ -417,21 +608,18 @@ const confirmLogout = () => {
     }
   };
 
-  // Called after choosing a pickup location.
   const handlePickupLocationContinue = (pickupStore) => {
     createOrder("pickup", pickupStore);
   };
 
-  // Cancel a locally created order.
   const handleCancelOrder = (orderId) => {
     setDemoOrders((previous) =>
       previous.map((order) =>
         order.id === orderId &&
-          order.status !== "Cancelled"
-          ? {
-            ...order,
-            status: "Cancelled",
-          }
+        ["Pending Pickup", "Pending Delivery"].includes(
+          order.status
+        )
+          ? { ...order, status: "Cancelled" }
           : order
       )
     );
@@ -442,12 +630,10 @@ const confirmLogout = () => {
     }
   };
 
-  // Cancel from the confirmation screen.
   const handleCancelConfirmation = () => {
     if (activeOrderId) {
       handleCancelOrder(activeOrderId);
     }
-
     setCurrentView("orders");
   };
 
@@ -461,72 +647,78 @@ const confirmLogout = () => {
       />
 
       {logoutMessage && (
-  <div
-    role="status"
-    style={{
-      backgroundColor: "#dcfce7",
-      color: "#166534",
-      padding: "12px",
-      textAlign: "center",
-      borderRadius: "8px",
-      margin: "12px auto",
-      maxWidth: "500px",
-    }}
-  >
-    {logoutMessage}
-  </div>
-)}
-
-  {showLogoutConfirmation && (
-  <div
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000,
-    }}
-  >
-    <div
-      style={{
-        backgroundColor: "white",
-        padding: "30px",
-        borderRadius: "12px",
-        width: "350px",
-        textAlign: "center",
-        boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
-      }}
-    >
-      <h2>Sign Out?</h2>
-
-      <p>Are you sure you want to sign out of your Shopping Hub account?</p>
-
-      <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
-        <button
-          onClick={cancelLogout}
-          style={{ ...styles.grayBtn, flex: 1 }}
+        <div
+          role="status"
+          style={{
+            backgroundColor: "#dcfce7",
+            color: "#166534",
+            padding: "12px",
+            textAlign: "center",
+            borderRadius: "8px",
+            margin: "12px auto",
+            maxWidth: "500px",
+          }}
         >
-          Cancel
-        </button>
+          {logoutMessage}
+        </div>
+      )}
 
-        <button
-          onClick={confirmLogout}
-          style={{ ...styles.yellowBtn, flex: 1 }}
+      {showLogoutConfirmation && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
         >
-          Sign Out
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="logout-title"
+            style={{
+              backgroundColor: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              width: "350px",
+              maxWidth: "calc(100vw - 48px)",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h2 id="logout-title">Sign Out?</h2>
+            <p>
+              Are you sure you want to sign out of your
+              Shopping Hub account?
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginTop: "24px",
+              }}
+            >
+              <button
+                onClick={cancelLogout}
+                style={{ ...styles.grayBtn, flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                style={{ ...styles.yellowBtn, flex: 1 }}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main style={styles.main}>
-        {/* Home */}
         {currentView === "home" && (
           <Home
             searchQuery={searchQuery}
@@ -536,7 +728,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Login */}
         {currentView === "login" && (
           <Login
             setCurrentView={handleNavigation}
@@ -544,7 +735,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Browsing */}
         {currentView === "search" && (
           <ProductBrowsing
             searchQuery={searchQuery}
@@ -572,7 +762,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Product details */}
         {currentView === "details" && (
           <ProductDetails
             selectedProduct={selectedProduct}
@@ -580,7 +769,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Buying options */}
         {currentView === "buyingOptions" && (
           <BuyingOptions
             key={selectedProduct.id}
@@ -590,7 +778,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Pickup store selection */}
         {currentView === "pickupLocation" && (
           <PickupLocation
             key={selectedProduct.id}
@@ -600,7 +787,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Order confirmation */}
         {currentView === "orderConfirmation" &&
           fulfillmentMethod &&
           activeOrder && (
@@ -613,7 +799,6 @@ const confirmLogout = () => {
             />
           )}
 
-        {/* Buyer messages */}
         {currentView === "ask" && (
           <Messages
             selectedProduct={selectedProduct}
@@ -625,7 +810,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* My Messages (nav bar): the user's own questions */}
         {currentView === "myMessages" && (
           <MyMessages
             questions={userQuestions}
@@ -635,7 +819,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Question submitted */}
         {currentView === "submitted" && (
           <QuestionSubmitted
             lastSubmittedQuestion={lastSubmittedQuestion}
@@ -643,7 +826,6 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* Product comparison */}
         {currentView === "compare" && (
           <Comparison
             selectedForCompare={selectedForCompare}
@@ -653,39 +835,40 @@ const confirmLogout = () => {
           />
         )}
 
-        {/* My Orders */}
         {currentView === "orders" && (
           <Orders
             orders={orders}
             setCurrentView={setCurrentView}
             onCancelOrder={handleCancelOrder}
+            onMarkDelivered={handleMarkDelivered}
+            onStartReturn={handleStartReturn}
+            onViewReturn={handleViewReturn}
           />
         )}
 
-        {/* Tracking */}
         {currentView === "track" && (
           <Tracking setCurrentView={setCurrentView} />
         )}
 
-        {/* Returns */}
-        {currentView === "return" && (
-          <Returns
-            selectedReturnMethod={selectedReturnMethod}
-            setSelectedReturnMethod={setSelectedReturnMethod}
-            handleConfirmReturn={handleConfirmReturn}
-            setCurrentView={setCurrentView}
-          />
-        )}
+        {currentView === "return" &&
+          selectedReturnOrder && (
+            <Returns
+              order={selectedReturnOrder}
+              selectedReturnMethod={selectedReturnMethod}
+              setSelectedReturnMethod={setSelectedReturnMethod}
+              handleConfirmReturn={handleConfirmReturn}
+              setCurrentView={setCurrentView}
+            />
+          )}
 
-        {/* Return confirmation */}
-        {currentView === "returnConfirm" && (
-          <ReturnConfirmation
-            selectedReturnMethod={selectedReturnMethod}
-            setCurrentView={setCurrentView}
-          />
-        )}
+        {currentView === "returnConfirm" &&
+          selectedReturnOrder?.returnInitiated && (
+            <ReturnConfirmation
+              order={selectedReturnOrder}
+              setCurrentView={setCurrentView}
+            />
+          )}
 
-        {/* Settings */}
         {currentView === "settings" && (
           <Settings
             setCurrentView={setCurrentView}

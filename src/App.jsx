@@ -14,7 +14,6 @@ import Messages from "./pages/Messages";
 import QuestionSubmitted from "./pages/QuestionSubmitted";
 import MyMessages from "./pages/MyMessages";
 import {
-  QA_PRODUCT_ID,
   SEED_QUESTIONS,
   WAITING_STATUS,
 } from "./data/questions";
@@ -84,6 +83,7 @@ function loadSaved(key, defaults) {
   try {
     const saved = localStorage.getItem(key);
     const parsed = saved ? JSON.parse(saved) : null;
+
     return parsed && typeof parsed === "object"
       ? { ...defaults, ...parsed }
       : defaults;
@@ -122,8 +122,11 @@ function loadNavigation() {
       selectedProductId: parsed.selectedProductId,
       activeOrderId: parsed.activeOrderId ?? null,
       fulfillmentMethod: parsed.fulfillmentMethod ?? null,
-      selectedReturnOrderId: parsed.selectedReturnOrderId ?? null,
-      selectedForCompare: Array.isArray(parsed.selectedForCompare)
+      selectedReturnOrderId:
+        parsed.selectedReturnOrderId ?? null,
+      selectedForCompare: Array.isArray(
+        parsed.selectedForCompare
+      )
         ? parsed.selectedForCompare.slice(0, 2)
         : [],
       searchQuery: parsed.searchQuery ?? "",
@@ -155,8 +158,12 @@ export default function App() {
   const [currentView, setCurrentView] = useState(
     initialNavigation.currentView
   );
-  const [showLogoutConfirmation, setShowLogoutConfirmation] =
-    useState(false);
+
+  const [
+    showLogoutConfirmation,
+    setShowLogoutConfirmation,
+  ] = useState(false);
+
   const [logoutMessage, setLogoutMessage] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -172,13 +179,16 @@ export default function App() {
       ) || PRODUCTS[0]
   );
 
+  // Buying and fulfillment
   const [fulfillmentMethod, setFulfillmentMethod] = useState(
     initialNavigation.fulfillmentMethod
   );
+
   const [activeOrderId, setActiveOrderId] = useState(
     initialNavigation.activeOrderId
   );
 
+  // Product comparison
   const [selectedForCompare, setSelectedForCompare] = useState(
     initialNavigation.selectedForCompare
   );
@@ -211,9 +221,7 @@ export default function App() {
     (question) => question.productId === selectedProduct.id
   );
 
-  const [newQuestionText, setNewQuestionText] = useState(
-    "Do these shoes run true to size?"
-  );
+  const [newQuestionText, setNewQuestionText] = useState("");
   const [lastSubmittedQuestion, setLastSubmittedQuestion] =
     useState("");
 
@@ -223,6 +231,7 @@ export default function App() {
     const existing = saved.find(
       (order) => order.id === SAMPLE_ORDER.id
     );
+
     return [existing || SAMPLE_ORDER];
   });
 
@@ -232,13 +241,13 @@ export default function App() {
     )
   );
 
+  // Returns
   const [selectedReturnOrderId, setSelectedReturnOrderId] =
     useState(initialNavigation.selectedReturnOrderId);
 
   const [selectedReturnMethod, setSelectedReturnMethod] =
     useState("drop-off");
 
-  // Persist orders
   useEffect(() => {
     save(ORDERS_KEY, demoOrders);
   }, [demoOrders]);
@@ -247,10 +256,11 @@ export default function App() {
     save(SAMPLE_ORDER_KEY, sampleOrders);
   }, [sampleOrders]);
 
-  // Preferences
+  // Settings and account
   const [preferences, setPreferences] = useState(() =>
     loadSaved(PREFERENCES_KEY, DEFAULT_PREFERENCES)
   );
+
   const [account, setAccount] = useState(() =>
     loadSaved(ACCOUNT_KEY, DEFAULT_ACCOUNT)
   );
@@ -277,7 +287,7 @@ export default function App() {
     (order) => order.id === selectedReturnOrderId
   );
 
-  // Save navigation so refreshing keeps the current screen
+  // Save navigation context across refreshes
   useEffect(() => {
     try {
       sessionStorage.setItem(
@@ -305,7 +315,7 @@ export default function App() {
     searchQuery,
   ]);
 
-  // Confirm that restored pages still have valid data
+  // Validate restored pages
   useEffect(() => {
     if (
       currentView === "orderConfirmation" &&
@@ -359,17 +369,24 @@ export default function App() {
       return;
     }
 
+    // Start with a fresh question when opening the form
+    if (view === "ask") {
+      setNewQuestionText("");
+    }
+
     setCurrentView(view);
   };
 
-  // Login
+  // Account
   const handleLogin = (email) => {
     setIsLoggedIn(true);
     setLogoutMessage("");
+
     setAccount((previous) => ({
       ...previous,
       email,
     }));
+
     setCurrentView("home");
   };
 
@@ -398,6 +415,7 @@ export default function App() {
     setSelectedProduct(product);
     setFulfillmentMethod(null);
     setActiveOrderId(null);
+    setNewQuestionText("");
     setCurrentView("details");
   };
 
@@ -408,7 +426,10 @@ export default function App() {
         return current.filter((item) => item !== id);
       }
 
-      if (current.length >= 2) return current;
+      if (current.length >= 2) {
+        return current;
+      }
+
       return [...current, id];
     });
   };
@@ -419,41 +440,54 @@ export default function App() {
     );
   };
 
-  // Questions
+  // Submit questions for any selected product
   const handlePostQuestion = (event) => {
     event.preventDefault();
 
     const text = newQuestionText.trim();
-    if (!text || selectedProduct.id !== QA_PRODUCT_ID) return;
+
+    if (!text || !selectedProduct) {
+      return;
+    }
+
+    const newQuestion = {
+      id: `Q-${Date.now()}-${Math.floor(
+        Math.random() * 10000
+      )}`,
+      productId: selectedProduct.id,
+      productName: selectedProduct.name,
+      q: text,
+      answer: null,
+      status: WAITING_STATUS,
+      postedAt: new Date().toISOString(),
+      isUser: true,
+    };
 
     setLastSubmittedQuestion(text);
 
     setUserQuestions((previous) => [
       ...previous,
-      {
-        id: `Q-${Date.now()}`,
-        productId: selectedProduct.id,
-        productName: selectedProduct.name,
-        q: text,
-        answer: null,
-        status: WAITING_STATUS,
-        postedAt: new Date().toISOString(),
-        isUser: true,
-      },
+      newQuestion,
     ]);
 
+    setNewQuestionText("");
     setCurrentView("submitted");
   };
 
   const handleDeleteQuestion = (questionId) => {
     setUserQuestions((previous) =>
-      previous.filter((question) => question.id !== questionId)
+      previous.filter(
+        (question) => question.id !== questionId
+      )
     );
   };
 
   // Returns
   const handleStartReturn = (orderId) => {
-    const order = orders.find((item) => item.id === orderId);
+    const order = orders.find(
+      (item) => item.id === orderId
+    );
+
     if (!isReturnEligible(order)) return;
 
     setSelectedReturnOrderId(orderId);
@@ -462,7 +496,10 @@ export default function App() {
   };
 
   const handleViewReturn = (orderId) => {
-    const order = orders.find((item) => item.id === orderId);
+    const order = orders.find(
+      (item) => item.id === orderId
+    );
+
     if (!order?.returnInitiated) return;
 
     setSelectedReturnOrderId(orderId);
@@ -478,6 +515,7 @@ export default function App() {
     if (!isReturnEligible(selectedReturnOrder)) return;
 
     const orderId = selectedReturnOrder.id;
+
     const returnMethod =
       selectedReturnMethod === "drop-off"
         ? "Store Drop-off"
@@ -498,12 +536,17 @@ export default function App() {
           }
         : order;
 
-    setSampleOrders((previous) => previous.map(updateOrder));
-    setDemoOrders((previous) => previous.map(updateOrder));
+    setSampleOrders((previous) =>
+      previous.map(updateOrder)
+    );
+
+    setDemoOrders((previous) =>
+      previous.map(updateOrder)
+    );
+
     setCurrentView("returnConfirm");
   };
 
-  // Update order status
   const handleMarkDelivered = (orderId) => {
     setDemoOrders((previous) =>
       previous.map((order) =>
@@ -524,9 +567,15 @@ export default function App() {
   // Buying
   const createOrder = (method, pickupStore = null) => {
     if (!selectedProduct.inStock) return;
-    if (!["pickup", "delivery"].includes(method)) return;
 
-    if (method === "pickup" && !selectedProduct.localPickup) {
+    if (!["pickup", "delivery"].includes(method)) {
+      return;
+    }
+
+    if (
+      method === "pickup" &&
+      !selectedProduct.localPickup
+    ) {
       return;
     }
 
@@ -537,14 +586,18 @@ export default function App() {
       return;
     }
 
-    if (method === "pickup" && !pickupStore) return;
+    if (method === "pickup" && !pickupStore) {
+      return;
+    }
 
     const freeShipping = selectedProduct.shipping
       .toLowerCase()
       .includes("free");
 
     const shippingCost =
-      method === "pickup" || freeShipping ? 0 : null;
+      method === "pickup" || freeShipping
+        ? 0
+        : null;
 
     const total =
       shippingCost === null
@@ -583,7 +636,11 @@ export default function App() {
       isDemo: true,
     };
 
-    setDemoOrders((previous) => [newOrder, ...previous]);
+    setDemoOrders((previous) => [
+      newOrder,
+      ...previous,
+    ]);
+
     setFulfillmentMethod(method);
     setActiveOrderId(newOrder.id);
     setCurrentView("orderConfirmation");
@@ -619,7 +676,10 @@ export default function App() {
         ["Pending Pickup", "Pending Delivery"].includes(
           order.status
         )
-          ? { ...order, status: "Cancelled" }
+          ? {
+              ...order,
+              status: "Cancelled",
+            }
           : order
       )
     );
@@ -634,11 +694,17 @@ export default function App() {
     if (activeOrderId) {
       handleCancelOrder(activeOrderId);
     }
+
     setCurrentView("orders");
   };
 
   return (
-    <div style={{ ...styles.container, zoom: textZoom }}>
+    <div
+      style={{
+        ...styles.container,
+        zoom: textZoom,
+      }}
+    >
       <Header
         currentView={currentView}
         setCurrentView={handleNavigation}
@@ -685,10 +751,12 @@ export default function App() {
               borderRadius: "12px",
               width: "350px",
               maxWidth: "calc(100vw - 48px)",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+              boxShadow:
+                "0 4px 15px rgba(0,0,0,0.2)",
             }}
           >
             <h2 id="logout-title">Sign Out?</h2>
+
             <p>
               Are you sure you want to sign out of your
               Shopping Hub account?
@@ -703,13 +771,20 @@ export default function App() {
             >
               <button
                 onClick={cancelLogout}
-                style={{ ...styles.grayBtn, flex: 1 }}
+                style={{
+                  ...styles.grayBtn,
+                  flex: 1,
+                }}
               >
                 Cancel
               </button>
+
               <button
                 onClick={confirmLogout}
-                style={{ ...styles.yellowBtn, flex: 1 }}
+                style={{
+                  ...styles.yellowBtn,
+                  flex: 1,
+                }}
               >
                 Sign Out
               </button>
@@ -765,7 +840,7 @@ export default function App() {
         {currentView === "details" && (
           <ProductDetails
             selectedProduct={selectedProduct}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
           />
         )}
 
@@ -773,7 +848,7 @@ export default function App() {
           <BuyingOptions
             key={selectedProduct.id}
             selectedProduct={selectedProduct}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
             onContinue={handleBuyingOptionContinue}
           />
         )}
@@ -783,7 +858,7 @@ export default function App() {
             key={selectedProduct.id}
             selectedProduct={selectedProduct}
             onContinue={handlePickupLocationContinue}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
           />
         )}
 
@@ -794,7 +869,7 @@ export default function App() {
               selectedProduct={selectedProduct}
               method={fulfillmentMethod}
               order={activeOrder}
-              setCurrentView={setCurrentView}
+              setCurrentView={handleNavigation}
               onCancel={handleCancelConfirmation}
             />
           )}
@@ -806,7 +881,7 @@ export default function App() {
             newQuestionText={newQuestionText}
             setNewQuestionText={setNewQuestionText}
             handlePostQuestion={handlePostQuestion}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
           />
         )}
 
@@ -815,14 +890,14 @@ export default function App() {
             questions={userQuestions}
             handleSelectProduct={handleSelectProduct}
             onDeleteQuestion={handleDeleteQuestion}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
           />
         )}
 
         {currentView === "submitted" && (
           <QuestionSubmitted
             lastSubmittedQuestion={lastSubmittedQuestion}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
           />
         )}
 
@@ -831,14 +906,14 @@ export default function App() {
             selectedForCompare={selectedForCompare}
             handleSelectProduct={handleSelectProduct}
             onRemoveProduct={handleRemoveComparedProduct}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
           />
         )}
 
         {currentView === "orders" && (
           <Orders
             orders={orders}
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
             onCancelOrder={handleCancelOrder}
             onMarkDelivered={handleMarkDelivered}
             onStartReturn={handleStartReturn}
@@ -847,7 +922,9 @@ export default function App() {
         )}
 
         {currentView === "track" && (
-          <Tracking setCurrentView={setCurrentView} />
+          <Tracking
+            setCurrentView={handleNavigation}
+          />
         )}
 
         {currentView === "return" &&
@@ -857,7 +934,7 @@ export default function App() {
               selectedReturnMethod={selectedReturnMethod}
               setSelectedReturnMethod={setSelectedReturnMethod}
               handleConfirmReturn={handleConfirmReturn}
-              setCurrentView={setCurrentView}
+              setCurrentView={handleNavigation}
             />
           )}
 
@@ -865,13 +942,13 @@ export default function App() {
           selectedReturnOrder?.returnInitiated && (
             <ReturnConfirmation
               order={selectedReturnOrder}
-              setCurrentView={setCurrentView}
+              setCurrentView={handleNavigation}
             />
           )}
 
         {currentView === "settings" && (
           <Settings
-            setCurrentView={setCurrentView}
+            setCurrentView={handleNavigation}
             preferences={preferences}
             setPreferences={setPreferences}
             account={account}

@@ -1,9 +1,7 @@
-// Only this product currently has buyer Q&A ("Ask previous buyers").
-export const QA_PRODUCT_ID = "prod-1";
 
 export const WAITING_STATUS = "Waiting for a buyer response";
 
-// Questions already on the product page, posted by other shoppers.
+// Existing product questions and answers.
 export const SEED_QUESTIONS = [
   {
     id: "seed-1",

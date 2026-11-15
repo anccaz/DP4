@@ -17,6 +17,7 @@ export default function OrderConfirmation({
 
   const isPickup = method === "pickup";
   const pickupStore = order.pickupStore;
+  const deliveryAddress = order.deliveryAddress;
 
   const title = isPickup
     ? "Local Pickup Confirmation"
@@ -25,9 +26,12 @@ export default function OrderConfirmation({
   const reference = order.id;
 
   const formatPrice = (amount) =>
-    `$${amount.toFixed(2)}`;
+    typeof amount === "number"
+      ? `$${amount.toFixed(2)}`
+      : "Not yet calculated";
 
-  const productPrice = order.itemPrice ?? selectedProduct.price;
+  const productPrice =
+    order.itemPrice ?? selectedProduct.price;
 
   const shippingCost = isPickup
     ? 0
@@ -38,7 +42,12 @@ export default function OrderConfirmation({
       ? null
       : productPrice + shippingCost;
 
-  // Generate the pickup QR code using order information.
+  const canCancel = [
+    "Pending Pickup",
+    "Pending Delivery",
+  ].includes(order.status);
+
+  // Generate pickup QR code
   useEffect(() => {
     if (!isPickup) return;
 
@@ -92,10 +101,11 @@ export default function OrderConfirmation({
 
   return (
     <div>
-      {/* Screen heading */}
       <div className="pickup-no-print">
         <span style={styles.subLabel}>
-          {isPickup ? "Local Pickup" : "Online Delivery"}
+          {isPickup
+            ? "Local Pickup"
+            : "Online Delivery"}
         </span>
 
         <h1 style={styles.pageHeading}>
@@ -108,12 +118,12 @@ export default function OrderConfirmation({
             color: "#475569",
           }}
         >
-          Review your order details below. You can print
-          or save a copy for your records.
+          Your order has been recorded.
+          Review the information below or
+          print a copy for your records.
         </p>
       </div>
 
-      {/* Printable receipt */}
       <section
         className="pickup-receipt"
         style={{
@@ -142,7 +152,6 @@ export default function OrderConfirmation({
           Order Confirmation
         </h3>
 
-        {/* Current order status */}
         <div
           style={{
             backgroundColor: "#fef3c7",
@@ -157,7 +166,6 @@ export default function OrderConfirmation({
           Status: {order.status}
         </div>
 
-        {/* Pickup QR code */}
         {isPickup && (
           <div style={{ marginBottom: "24px" }}>
             <h3 style={{ fontSize: "20px" }}>
@@ -178,7 +186,7 @@ export default function OrderConfirmation({
             ) : (
               <p role="status">
                 {qrError
-                  ? "QR code is temporarily unavailable."
+                  ? "QR code is currently unavailable."
                   : "Generating QR code..."}
               </p>
             )}
@@ -189,12 +197,11 @@ export default function OrderConfirmation({
                 color: "#475569",
               }}
             >
-              Bring this QR code when collecting your order.
+              Keep this code with your pickup details.
             </p>
           </div>
         )}
 
-        {/* Order number */}
         <div
           style={{
             backgroundColor: "#f1f5f9",
@@ -223,7 +230,6 @@ export default function OrderConfirmation({
           </strong>
         </div>
 
-        {/* Order and fulfillment details */}
         <div
           style={{
             textAlign: "left",
@@ -235,87 +241,125 @@ export default function OrderConfirmation({
         >
           <p>
             <strong>Product:</strong>{" "}
-            {selectedProduct.name}
+            {order.productName}
           </p>
 
           <p>
             <strong>Sold By:</strong>{" "}
-            {selectedProduct.store}
+            {order.store}
           </p>
 
           <p>
             <strong>Fulfillment Method:</strong>{" "}
-            {isPickup ? "Local Pickup" : "Online Delivery"}
+            {isPickup
+              ? "Local Pickup"
+              : "Online Delivery"}
           </p>
 
           {isPickup ? (
-            <>
-              <div
+            <div
+              style={{
+                backgroundColor: "#f8fafc",
+                padding: "18px",
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                margin: "20px 0",
+              }}
+            >
+              <h3
                 style={{
-                  backgroundColor: "#f8fafc",
-                  padding: "18px",
-                  borderRadius: "10px",
-                  border: "1px solid #e2e8f0",
-                  margin: "20px 0",
+                  marginTop: 0,
+                  fontSize: "20px",
                 }}
               >
-                <h3
+                Pickup Location
+              </h3>
+
+              <p>
+                <strong>Store:</strong>{" "}
+                {pickupStore?.name ?? "Not selected"}
+              </p>
+
+              <p>
+                <strong>Area:</strong>{" "}
+                {pickupStore?.area ?? "Not available"}
+              </p>
+
+              <p>
+                <strong>Pickup Estimate:</strong>{" "}
+                {pickupStore?.pickupEstimate ??
+                  "To be confirmed"}
+              </p>
+
+              <p>
+                <strong>Store Hours:</strong>{" "}
+                {pickupStore?.hours ?? "Not available"}
+              </p>
+
+              <p>
+                <strong>Pickup Fee:</strong> Free
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                backgroundColor: "#f8fafc",
+                padding: "18px",
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                margin: "20px 0",
+              }}
+            >
+              <h3
+                style={{
+                  marginTop: 0,
+                  fontSize: "20px",
+                }}
+              >
+                Delivery Information
+              </h3>
+
+              <p>
+                <strong>Recipient:</strong>{" "}
+                {deliveryAddress?.fullName ??
+                  "Not available"}
+              </p>
+
+              <p style={{ marginBottom: "4px" }}>
+                <strong>Delivery Address:</strong>
+              </p>
+
+              {deliveryAddress ? (
+                <address
                   style={{
-                    marginTop: 0,
-                    fontSize: "20px",
+                    fontStyle: "normal",
+                    marginLeft: "16px",
+                    lineHeight: "1.7",
                   }}
                 >
-                  Pickup Location
-                </h3>
+                  {deliveryAddress.street}
+                  {deliveryAddress.apartment && (
+                    <>
+                      {", "}
+                      {deliveryAddress.apartment}
+                    </>
+                  )}
 
-                <p>
-                  <strong>Store:</strong>{" "}
-                  {pickupStore?.name ?? "Not selected"}
-                </p>
-
-                <p>
-                  <strong>Area:</strong>{" "}
-                  {pickupStore?.area ?? "Not available"}
-                </p>
-
-                <p>
-                  <strong>Pickup Estimate:</strong>{" "}
-                  {pickupStore?.pickupEstimate ??
-                    "To be confirmed"}
-                </p>
-
-                <p>
-                  <strong>Store Hours:</strong>{" "}
-                  {pickupStore?.hours ?? "Not available"}
-                </p>
-
-                <p>
-                  <strong>Pickup Fee:</strong> Free
-                </p>
-              </div>
-
-              <p
-                style={{
-                  fontSize: "15px",
-                  color: "#475569",
-                }}
-              >
-                Please bring your pickup confirmation
-                and QR code when visiting the store.
-              </p>
-            </>
-          ) : (
-            <>
-              <p>
-                <strong>Delivery Address:</strong>{" "}
-                Not provided
-              </p>
+                  <div>
+                    {deliveryAddress.city},{" "}
+                    {deliveryAddress.state}{" "}
+                    {deliveryAddress.zip}
+                  </div>
+                </address>
+              ) : (
+                <p>Address not available.</p>
+              )}
 
               <p>
                 <strong>Estimated Delivery:</strong>{" "}
                 To be confirmed
               </p>
-            </>
+            </div>
           )}
 
           <hr
@@ -326,7 +370,10 @@ export default function OrderConfirmation({
             }}
           />
 
-          {/* Price breakdown */}
+          <h3 style={{ fontSize: "20px" }}>
+            Order Summary
+          </h3>
+
           <div
             style={{
               display: "flex",
@@ -335,7 +382,9 @@ export default function OrderConfirmation({
             }}
           >
             <span>Item Price</span>
-            <strong>{formatPrice(productPrice)}</strong>
+            <strong>
+              {formatPrice(productPrice)}
+            </strong>
           </div>
 
           <div
@@ -352,9 +401,7 @@ export default function OrderConfirmation({
             <strong>
               {shippingCost === 0
                 ? "Free"
-                : shippingCost === null
-                  ? "Not yet calculated"
-                  : formatPrice(shippingCost)}
+                : formatPrice(shippingCost)}
             </strong>
           </div>
 
@@ -381,20 +428,30 @@ export default function OrderConfirmation({
             </span>
           </div>
 
-          {total === null && (
-            <p
-              style={{
-                fontSize: "14px",
-                color: "#64748b",
-              }}
-            >
-              Shipping and taxes have not been included.
-            </p>
-          )}
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#64748b",
+              marginTop: "16px",
+            }}
+          >
+            {total === null
+              ? "Shipping and tax have not been calculated. The final amount is not available."
+              : "Tax has not been calculated. The amount shown is before tax."}
+          </p>
+
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#64748b",
+              marginTop: "12px",
+            }}
+          >
+            No payment has been collected.
+          </p>
         </div>
       </section>
 
-      {/* Actions hidden when printing */}
       <div
         className="pickup-no-print"
         style={{
@@ -425,20 +482,21 @@ export default function OrderConfirmation({
           View My Orders
         </button>
 
-        <button
-          type="button"
-          style={{
-            ...styles.grayBtn,
-            color: "#b91c1c",
-            border: "1px solid #fca5a5",
-          }}
-          onClick={() => setShowCancelPrompt(true)}
-        >
-          Cancel Order
-        </button>
+        {canCancel && (
+          <button
+            type="button"
+            style={{
+              ...styles.grayBtn,
+              color: "#b91c1c",
+              border: "1px solid #fca5a5",
+            }}
+            onClick={() => setShowCancelPrompt(true)}
+          >
+            Cancel Order
+          </button>
+        )}
       </div>
 
-      {/* Cancellation confirmation */}
       {showCancelPrompt && (
         <div
           className="pickup-no-print"

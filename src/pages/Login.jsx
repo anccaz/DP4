@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { styles } from "../styles/styles";
 
-export default function Login({ setCurrentView }) {
+export default function Login({ setCurrentView, onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -16,7 +16,9 @@ export default function Login({ setCurrentView }) {
       return;
     }
 
-    setCurrentView("home");};
+    // Notify App that the user signed in.
+    onLogin(email.trim());
+  };
 
   return (
     <div style={{ maxWidth: "480px", margin: "40px auto" }}>

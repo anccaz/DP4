@@ -1,6 +1,11 @@
 import { styles } from "../styles/styles";
 
-export default function Header({ currentView, setCurrentView }) {
+export default function Header({
+  currentView,
+  setCurrentView,
+  isLoggedIn,
+  onLogout,
+}) {
   return (
     <header style={styles.nav}>
       <div style={styles.brand} onClick={() => setCurrentView("home")}>
@@ -31,12 +36,21 @@ export default function Header({ currentView, setCurrentView }) {
         >
           Messages
         </span>
+        {isLoggedIn ? (
+        <span
+         style={styles.navLink(false)}
+         onClick={onLogout}
+        >
+        Log Out
+       </span>
+        ) : (
         <span
           style={styles.navLink(currentView === "login")}
           onClick={() => setCurrentView("login")}
-        >
-          Login
+       >
+         Login
         </span>
+)}
         <span
           style={styles.navLink(currentView === "settings")}
           onClick={() => setCurrentView("settings")}

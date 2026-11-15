@@ -1,12 +1,10 @@
 
 import { styles } from "../styles/styles";
-import { QA_PRODUCT_ID } from "../data/questions";
 
 export default function ProductDetails({
   selectedProduct,
   setCurrentView,
 }) {
-
   const availabilityText = selectedProduct.inStock
     ? "In stock"
     : "Out of stock";
@@ -22,7 +20,9 @@ export default function ProductDetails({
           ← Back to results
         </button>
       </div>
+
       <span style={styles.subLabel}>Product Details</span>
+
       <h1 style={styles.pageHeading}>
         {selectedProduct.name}
       </h1>
@@ -35,7 +35,7 @@ export default function ProductDetails({
           gap: "32px",
         }}
       >
-        {/* Product image placeholder */}
+        {/* Product image */}
         <div
           style={{
             ...styles.card,
@@ -57,7 +57,7 @@ export default function ProductDetails({
               justifyContent: "center",
               marginBottom: "16px",
             }}
-          ></div>
+          />
 
           <span
             style={{
@@ -92,7 +92,9 @@ export default function ProductDetails({
             Sold by {selectedProduct.store} •{" "}
             <span
               style={{
-                color: selectedProduct.inStock ? "#15803d" : "#b91c1c",
+                color: selectedProduct.inStock
+                  ? "#15803d"
+                  : "#b91c1c",
                 fontWeight: "600",
               }}
             >
@@ -130,14 +132,26 @@ export default function ProductDetails({
 
           {/* Delivery and pickup information */}
           <div style={{ marginBottom: "28px" }}>
-            <h3 style={{ fontSize: "18px", marginBottom: "16px" }}>
+            <h3
+              style={{
+                fontSize: "18px",
+                marginBottom: "16px",
+              }}
+            >
               Delivery & Pickup
             </h3>
 
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "12px",
+              }}
+            >
               Local pickup:
               <span>
-                {selectedProduct.inStock && selectedProduct.localPickup
+                {selectedProduct.inStock &&
+                selectedProduct.localPickup
                   ? "Available"
                   : "Not available"}
               </span>
@@ -151,12 +165,20 @@ export default function ProductDetails({
               }}
             />
 
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
               Online delivery:
               <span>
-                {!selectedProduct.inStock || !selectedProduct.onlineDelivery
+                {!selectedProduct.inStock ||
+                !selectedProduct.onlineDelivery
                   ? "Not available"
-                  : selectedProduct.shipping.toLowerCase().includes("free")
+                  : selectedProduct.shipping
+                      .toLowerCase()
+                      .includes("free")
                     ? "Free"
                     : selectedProduct.shipping}
               </span>
@@ -171,15 +193,13 @@ export default function ProductDetails({
               gap: "12px",
             }}
           >
-            {selectedProduct.id === QA_PRODUCT_ID && (
-              <button
-                type="button"
-                style={styles.grayBtn}
-                onClick={() => setCurrentView("ask")}
-              >
-                Ask previous buyers
-              </button>
-            )}
+            <button
+              type="button"
+              style={styles.grayBtn}
+              onClick={() => setCurrentView("ask")}
+            >
+              Ask previous buyers
+            </button>
 
             <button
               type="button"
@@ -191,16 +211,29 @@ export default function ProductDetails({
                   : "not-allowed",
               }}
               disabled={!selectedProduct.inStock}
-              onClick={() => setCurrentView("buyingOptions")}
+              onClick={() =>
+                setCurrentView("buyingOptions")
+              }
             >
               View Buying Options
             </button>
           </div>
         </div>
       </div>
-      {/* Product information */}
-      <div style={{ ...styles.card, marginTop: "24px" }}>
-        <h2 style={{ fontSize: "22px", marginTop: 0 }}>
+
+      {/* Product specifications */}
+      <div
+        style={{
+          ...styles.card,
+          marginTop: "24px",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "22px",
+            marginTop: 0,
+          }}
+        >
           Product Information
         </h2>
 
@@ -210,7 +243,9 @@ export default function ProductDetails({
               <strong>
                 {key
                   .replace(/([A-Z])/g, " $1")
-                  .replace(/^./, (letter) => letter.toUpperCase())}
+                  .replace(/^./, (letter) =>
+                    letter.toUpperCase()
+                  )}
                 :
               </strong>{" "}
               {value}

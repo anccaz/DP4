@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { styles } from "../styles/styles";
 
-// Predefined store options for the Shopping Hub prototype.
 const PICKUP_STORES = [
   {
     id: "north-dallas",
@@ -24,10 +23,13 @@ const PICKUP_STORES = [
 
 export default function PickupLocation({
   selectedProduct,
+  initialStoreId = null,
   onContinue,
   setCurrentView,
 }) {
-  const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const [selectedStoreId, setSelectedStoreId] = useState(
+    initialStoreId
+  );
 
   const selectedStore = PICKUP_STORES.find(
     (store) => store.id === selectedStoreId
@@ -62,18 +64,22 @@ export default function PickupLocation({
           marginBottom: "28px",
         }}
       >
-        Select the store where you would like to collect
-        your order.
+        Select the store where you would like to
+        collect your order.
       </p>
 
-      {/* Product information */}
       <div
         style={{
           ...styles.card,
           marginBottom: "24px",
         }}
       >
-        <h2 style={{ marginTop: 0, fontSize: "23px" }}>
+        <h2
+          style={{
+            marginTop: 0,
+            fontSize: "23px",
+          }}
+        >
           {selectedProduct.name}
         </h2>
 
@@ -90,7 +96,6 @@ export default function PickupLocation({
         Available Pickup Locations
       </h2>
 
-      {/* Store selection */}
       <div
         role="group"
         aria-label="Pickup locations"
@@ -208,7 +213,6 @@ export default function PickupLocation({
         })}
       </div>
 
-      {/* Summary */}
       <div
         style={{
           ...styles.card,
@@ -244,11 +248,12 @@ export default function PickupLocation({
           }}
         >
           <span>Total Before Tax</span>
-          <span>{formatPrice(selectedProduct.price)}</span>
+          <span>
+            {formatPrice(selectedProduct.price)}
+          </span>
         </div>
       </div>
 
-      {/* Actions */}
       <div
         style={{
           display: "flex",
@@ -271,7 +276,7 @@ export default function PickupLocation({
               : "not-allowed",
           }}
         >
-          Continue with Selected Location
+          Review Order
         </button>
 
         <button

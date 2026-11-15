@@ -1,3 +1,4 @@
+
 import { styles } from "../styles/styles";
 
 export default function ProductCard({
@@ -6,6 +7,10 @@ export default function ProductCard({
   toggleCompareCheckbox,
   handleSelectProduct,
 }) {
+  const isSelected = selectedForCompare.includes(product.id);
+  const comparisonFull = selectedForCompare.length >= 2;
+  const cannotSelect = comparisonFull && !isSelected;
+
   return (
     <div
       style={{
@@ -17,6 +22,10 @@ export default function ProductCard({
         justifyContent: "space-between",
         flexWrap: "wrap",
         gap: "16px",
+        border: isSelected
+          ? "2px solid #d99915"
+          : styles.card.border,
+        backgroundColor: isSelected ? "#fffbeb" : "#fff",
       }}
     >
       <div
@@ -47,20 +56,35 @@ export default function ProductCard({
 
         <div>
           <h4
-            style={{ margin: "0 0 6px 0", fontSize: "18px", fontWeight: "700" }}
+            style={{
+              margin: "0 0 6px",
+              fontSize: "18px",
+              fontWeight: "700",
+            }}
           >
             {product.name}
           </h4>
+
           <div
-            style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px" }}
+            style={{
+              fontSize: "14px",
+              color: "#64748b",
+              marginBottom: "8px",
+            }}
           >
             {product.store} • ★ {product.rating} / 5
           </div>
+
           <div
-            style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b" }}
+            style={{
+              fontSize: "20px",
+              fontWeight: "800",
+              color: "#1e293b",
+            }}
           >
             ${product.price.toFixed(2)}
           </div>
+
           <div
             style={{
               fontSize: "14px",
@@ -70,6 +94,7 @@ export default function ProductCard({
           >
             {product.shipping}
           </div>
+
           <div
             style={{
               fontSize: "14px",
@@ -80,6 +105,20 @@ export default function ProductCard({
           >
             {product.inStock ? "In Stock" : "Out of Stock"}
           </div>
+
+          {isSelected && (
+            <div
+              role="status"
+              style={{
+                marginTop: "10px",
+                color: "#92400e",
+                fontWeight: "700",
+                fontSize: "14px",
+              }}
+            >
+              ✓ Selected for comparison
+            </div>
+          )}
         </div>
       </div>
 
@@ -93,26 +132,48 @@ export default function ProductCard({
         }}
       >
         <button
+          type="button"
           style={styles.yellowBtn}
           onClick={() => handleSelectProduct(product)}
         >
           View details
         </button>
+
         <button
+          type="button"
+          disabled={cannotSelect}
+          aria-pressed={isSelected}
+          onClick={() => toggleCompareCheckbox(product.id)}
           style={{
             ...styles.grayBtn,
             width: "100%",
             boxSizing: "border-box",
-            backgroundColor: selectedForCompare.includes(product.id)
-              ? "#cbd5e1"
+            backgroundColor: isSelected
+              ? "#fde68a"
               : "#eef2f6",
+            border: isSelected
+              ? "2px solid #d99915"
+              : "2px solid transparent",
+            opacity: cannotSelect ? 0.5 : 1,
+            cursor: cannotSelect ? "not-allowed" : "pointer",
           }}
-          onClick={() => toggleCompareCheckbox(product.id)}
         >
-          {selectedForCompare.includes(product.id)
-            ? "Remove from Compare"
+          {isSelected
+            ? "✓ Remove from Compare"
             : "Add to Compare"}
         </button>
+
+        {cannotSelect && (
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#64748b",
+              textAlign: "center",
+            }}
+          >
+            Two products selected. Remove one to add another.
+          </span>
+        )}
       </div>
     </div>
   );

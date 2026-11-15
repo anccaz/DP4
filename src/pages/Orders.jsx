@@ -6,6 +6,9 @@ export default function Orders({
   orders,
   setCurrentView,
   onCancelOrder,
+  onMarkDelivered,
+  onStartReturn,
+  onViewReturn,
 }) {
   const [filter, setFilter] = useState("all");
   const [cancelTarget, setCancelTarget] = useState(null);
@@ -47,7 +50,6 @@ export default function Orders({
 
   const handleConfirmCancellation = () => {
     if (!cancelTarget) return;
-
     onCancelOrder(cancelTarget.id);
     setCancelTarget(null);
   };
@@ -55,7 +57,6 @@ export default function Orders({
   return (
     <div>
       <span style={styles.subLabel}>Order history</span>
-
       <h1 style={styles.pageHeading}>My Orders</h1>
 
       <p
@@ -71,7 +72,6 @@ export default function Orders({
       </p>
 
       <div style={styles.card}>
-        {/* Order filters */}
         <div
           style={{
             display: "flex",
@@ -124,7 +124,6 @@ export default function Orders({
           </div>
         </div>
 
-        {/* Order list */}
         {filteredOrders.length === 0 ? (
           <p
             style={{
@@ -137,9 +136,19 @@ export default function Orders({
           </p>
         ) : (
           filteredOrders.map((order) => {
-            const canCancel =
-              order.isDemo &&
-              order.status !== "Cancelled";
+            const isPending = [
+              "Pending Delivery",
+              "Pending Pickup",
+            ].includes(order.status);
+
+            const canCancel = order.isDemo && isPending;
+            const canMarkDelivered = order.isDemo && isPending;
+
+            const canReturn =
+              order.status === "Delivered" &&
+              !order.returnInitiated;
+
+            const hasReturn = Boolean(order.returnInitiated);
 
             return (
               <article
@@ -258,8 +267,7 @@ export default function Orders({
                             : "Total Before Tax"}
                           :{" "}
                           {formatPrice(
-                            order.totalPaid ??
-                              order.itemPrice
+                            order.totalPaid ?? order.itemPrice
                           )}
                         </p>
 
@@ -272,6 +280,18 @@ export default function Orders({
                             }}
                           >
                             Shipping and tax not included.
+                          </p>
+                        )}
+
+                        {order.deliveryDate && (
+                          <p
+                            style={{
+                              color: "#15803d",
+                              fontSize: "13px",
+                              marginTop: "8px",
+                            }}
+                          >
+                            {order.deliveryDate}
                           </p>
                         )}
                       </>
@@ -293,28 +313,82 @@ export default function Orders({
                             margin: 0,
                           }}
                         >
-                          Total Paid:{" "}
-                          {formatPrice(order.totalPaid)}
+                          Total Paid: {formatPrice(order.totalPaid)}
+                        </p>
+                      </>
+                    )}
+
+                    {hasReturn && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "10px",
+                          backgroundColor: "#fffbeb",
+                          border: "1px solid #fde68a",
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <p
+                          style={{
+                            color: "#92400e",
+                            fontSize: "14px",
+                            fontWeight: "700",
+                            margin: "0 0 5px",
+                          }}
+                        >
+                          Return Requested
                         </p>
 
-                        {order.returnInitiated && (
+                        <p
+                          style={{
+                            color: "#475569",
+                            fontSize: "13px",
+                            margin: 0,
+                          }}
+                        >
+                          Method: {order.returnMethod}
+                        </p>
+
+                        {order.returnReference && (
                           <p
                             style={{
-                              color: "#ea580c",
+                              color: "#475569",
                               fontSize: "13px",
-                              fontWeight: "600",
+                              margin: "5px 0 0",
+                              overflowWrap: "anywhere",
                             }}
                           >
-                            Return Status:{" "}
-                            {order.returnMethod} requested
+                            Reference: {order.returnReference}
                           </p>
                         )}
-                      </>
+                      </div>
+                    )}
+
+                    {order.status === "Cancelled" && (
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#64748b",
+                        }}
+                      >
+                        This order is not eligible for return.
+                      </p>
+                    )}
+
+                    {isPending && (
+                      <p
+                        style={{
+                          fontSize: "13px",
+                          color: "#64748b",
+                          marginTop: "10px",
+                        }}
+                      >
+                        Returns become available after delivery.
+                      </p>
                     )}
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div
                   style={{
                     display: "flex",
@@ -323,6 +397,36 @@ export default function Orders({
                     minWidth: "170px",
                   }}
                 >
+                  {canReturn && (
+                    <button
+                      type="button"
+                      style={styles.yellowBtn}
+                      onClick={() => onStartReturn(order.id)}
+                    >
+                      Return Purchase
+                    </button>
+                  )}
+
+                  {hasReturn && (
+                    <button
+                      type="button"
+                      style={styles.yellowBtn}
+                      onClick={() => onViewReturn(order.id)}
+                    >
+                      View Return Slip
+                    </button>
+                  )}
+
+                  {canMarkDelivered && (
+                    <button
+                      type="button"
+                      style={styles.outlineBtn}
+                      onClick={() => onMarkDelivered(order.id)}
+                    >
+                      Mark as Delivered
+                    </button>
+                  )}
+
                   {canCancel && (
                     <button
                       type="button"
@@ -331,38 +435,20 @@ export default function Orders({
                         color: "#b91c1c",
                         border: "1px solid #fca5a5",
                       }}
-                      onClick={() =>
-                        setCancelTarget(order)
-                      }
+                      onClick={() => setCancelTarget(order)}
                     >
                       Cancel Order
                     </button>
                   )}
 
                   {!order.isDemo && (
-                    <>
-                      <button
-                        type="button"
-                        style={styles.yellowBtn}
-                        onClick={() =>
-                          setCurrentView("return")
-                        }
-                      >
-                        {order.returnInitiated
-                          ? "View Return Slip"
-                          : "Return Purchase"}
-                      </button>
-
-                      <button
-                        type="button"
-                        style={styles.grayBtn}
-                        onClick={() =>
-                          setCurrentView("track")
-                        }
-                      >
-                        Track Delivery
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      style={styles.grayBtn}
+                      onClick={() => setCurrentView("track")}
+                    >
+                      Track Delivery
+                    </button>
                   )}
 
                   {order.status === "Cancelled" && (
@@ -383,7 +469,6 @@ export default function Orders({
           })
         )}
 
-        {/* Cancellation confirmation */}
         {cancelTarget && (
           <div
             role="alertdialog"
@@ -406,8 +491,7 @@ export default function Orders({
             </h2>
 
             <p id="cancel-order-description">
-              Are you sure you want to cancel the order
-              for{" "}
+              Are you sure you want to cancel the order for{" "}
               <strong>{cancelTarget.productName}</strong>?
             </p>
 
@@ -433,9 +517,7 @@ export default function Orders({
               <button
                 type="button"
                 style={styles.yellowBtn}
-                onClick={() =>
-                  setCancelTarget(null)
-                }
+                onClick={() => setCancelTarget(null)}
               >
                 Keep Order
               </button>

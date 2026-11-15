@@ -1,5 +1,6 @@
 
 import { styles } from "../styles/styles";
+import { QA_PRODUCT_ID } from "../data/questions";
 
 export default function ProductDetails({
   selectedProduct,
@@ -170,13 +171,15 @@ export default function ProductDetails({
               gap: "12px",
             }}
           >
-            <button
-              type="button"
-              style={styles.grayBtn}
-              onClick={() => setCurrentView("ask")}
-            >
-              Ask previous buyers
-            </button>
+            {selectedProduct.id === QA_PRODUCT_ID && (
+              <button
+                type="button"
+                style={styles.grayBtn}
+                onClick={() => setCurrentView("ask")}
+              >
+                Ask previous buyers
+              </button>
+            )}
 
             <button
               type="button"

@@ -4,6 +4,7 @@ import { PRODUCTS } from "./data/products";
 import { styles } from "./styles/styles";
 
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 import ProductBrowsing from "./pages/ProductBrowsing";
 import ProductDetails from "./pages/ProductDetails";
 import BuyingOptions from "./pages/BuyingOptions";
@@ -11,15 +12,59 @@ import PickupLocation from "./pages/PickupLocation";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Messages from "./pages/Messages";
 import QuestionSubmitted from "./pages/QuestionSubmitted";
+import MyMessages from "./pages/MyMessages";
+import {
+  QA_PRODUCT_ID,
+  SEED_QUESTIONS,
+  WAITING_STATUS,
+} from "./data/questions";
 import Comparison from "./pages/Comparison";
 import Orders from "./pages/Orders";
 import Tracking from "./pages/Tracking";
 import Returns from "./pages/Returns";
 import ReturnConfirmation from "./pages/ReturnConfirmation";
 import Settings from "./pages/Settings";
+import { TEXT_SIZES } from "./data/settings";
 import Header from "./components/Header";
 
 const ORDERS_KEY = "shopping-hub-demo-orders";
+const PREFERENCES_KEY = "shopping-hub-preferences";
+const ACCOUNT_KEY = "shopping-hub-account";
+const QUESTIONS_KEY = "shopping-hub-my-questions";
+
+const DEFAULT_PREFERENCES = {
+  textSize: "standard",
+  notifications: "minimal",
+  recommendations: true,
+};
+
+// Demo account. Stored locally in the browser only.
+const DEFAULT_ACCOUNT = {
+  name: "Demo Shopper",
+  email: "demo@shoppinghub.com",
+  phone: "",
+};
+
+function loadSaved(key, defaults) {
+  try {
+    const saved = localStorage.getItem(key);
+    const parsed = saved ? JSON.parse(saved) : null;
+
+    return parsed && typeof parsed === "object"
+      ? { ...defaults, ...parsed }
+      : defaults;
+  } catch {
+    return defaults;
+  }
+}
+
+function save(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn(`Could not save ${key}:`, error);
+  }
+}
 
 const SAMPLE_ORDER = {
   id: "#1042",
@@ -50,6 +95,9 @@ function loadSavedOrders() {
 
 export default function App() {
   const [currentView, setCurrentView] = useState("home");
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [logoutMessage, setLogoutMessage] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(
     PRODUCTS[0]
@@ -75,13 +123,20 @@ export default function App() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterRating, setFilterRating] = useState(false);
 
-  // Buyer questions
-  const [questions, setQuestions] = useState([
-    {
-      q: "Are these comfortable for daily walking?",
-      a: "I use them on daily walks and find them comfortable. — Verified Buyer ✓",
-    },
-  ]);
+  // Buyer questions. Only the user's own questions are saved.
+  const [userQuestions, setUserQuestions] = useState(() => {
+    const saved = loadSaved(QUESTIONS_KEY, { items: [] });
+    return Array.isArray(saved.items) ? saved.items : [];
+  });
+
+  useEffect(
+    () => save(QUESTIONS_KEY, { items: userQuestions }),
+    [userQuestions]
+  );
+
+  const productQuestions = [...SEED_QUESTIONS, ...userQuestions].filter(
+    (question) => question.productId === selectedProduct.id
+  );
 
   const [newQuestionText, setNewQuestionText] = useState(
     "Do these shoes run true to size?"
@@ -114,6 +169,20 @@ export default function App() {
     }
   }, [demoOrders]);
 
+  // Settings and account
+  const [preferences, setPreferences] = useState(() =>
+    loadSaved(PREFERENCES_KEY, DEFAULT_PREFERENCES)
+  );
+  const [account, setAccount] = useState(() =>
+    loadSaved(ACCOUNT_KEY, DEFAULT_ACCOUNT)
+  );
+
+  useEffect(() => save(PREFERENCES_KEY, preferences), [preferences]);
+  useEffect(() => save(ACCOUNT_KEY, account), [account]);
+
+  const textZoom =
+    TEXT_SIZES[preferences.textSize]?.zoom ?? TEXT_SIZES.standard.zoom;
+
   const orders = [...demoOrders, ...sampleOrders];
 
   const activeOrder = orders.find(
@@ -122,12 +191,46 @@ export default function App() {
 
   // General navigation
   const handleNavigation = (view) => {
-    if (view === "home") {
-      setSelectedForCompare([]);
-    }
+  setLogoutMessage("");
 
-    setCurrentView(view);
-  };
+  if (view === "home") {
+    setSelectedForCompare([]);
+  }
+
+  setCurrentView(view);
+};
+
+  // Sign in
+const handleLogin = (email) => {
+  setIsLoggedIn(true);
+  setLogoutMessage("");
+
+  setAccount((previous) => ({
+    ...previous,
+    email: email,
+  }));
+
+  setCurrentView("home");
+};
+
+// Sign out
+// Show the confirmation before signing out
+const handleLogout = () => {
+  setShowLogoutConfirmation(true);
+};
+
+// Cancel signing out
+const cancelLogout = () => {
+  setShowLogoutConfirmation(false);
+};
+
+// Confirm signing out
+const confirmLogout = () => {
+  setIsLoggedIn(false);
+  setShowLogoutConfirmation(false);
+  setLogoutMessage("You have successfully signed out!");
+  setCurrentView("home");
+};
 
   // Product search
   const handleSearchSubmit = (e) => {
@@ -168,19 +271,32 @@ export default function App() {
   const handlePostQuestion = (e) => {
     e.preventDefault();
 
-    if (!newQuestionText.trim()) return;
+    const text = newQuestionText.trim();
+    if (!text || selectedProduct.id !== QA_PRODUCT_ID) return;
 
-    setLastSubmittedQuestion(newQuestionText);
+    setLastSubmittedQuestion(text);
 
-    setQuestions([
-      ...questions,
+    setUserQuestions((previous) => [
+      ...previous,
       {
-        q: newQuestionText,
-        a: "Status: Waiting for a buyer response",
+        id: `Q-${Date.now()}`,
+        productId: selectedProduct.id,
+        productName: selectedProduct.name,
+        q: text,
+        answer: null,
+        status: WAITING_STATUS,
+        postedAt: new Date().toISOString(),
+        isUser: true,
       },
     ]);
 
     setCurrentView("submitted");
+  };
+
+  const handleDeleteQuestion = (questionId) => {
+    setUserQuestions((previous) =>
+      previous.filter((question) => question.id !== questionId)
+    );
   };
 
   // Existing returns workflow
@@ -336,11 +452,78 @@ export default function App() {
   };
 
   return (
-    <div style={styles.container}>
+    <div style={{ ...styles.container, zoom: textZoom }}>
       <Header
         currentView={currentView}
         setCurrentView={handleNavigation}
+        isLoggedIn={isLoggedIn}
+        onLogout={handleLogout}
       />
+
+      {logoutMessage && (
+  <div
+    role="status"
+    style={{
+      backgroundColor: "#dcfce7",
+      color: "#166534",
+      padding: "12px",
+      textAlign: "center",
+      borderRadius: "8px",
+      margin: "12px auto",
+      maxWidth: "500px",
+    }}
+  >
+    {logoutMessage}
+  </div>
+)}
+
+  {showLogoutConfirmation && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    }}
+  >
+    <div
+      style={{
+        backgroundColor: "white",
+        padding: "30px",
+        borderRadius: "12px",
+        width: "350px",
+        textAlign: "center",
+        boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+      }}
+    >
+      <h2>Sign Out?</h2>
+
+      <p>Are you sure you want to sign out of your Shopping Hub account?</p>
+
+      <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+        <button
+          onClick={cancelLogout}
+          style={{ ...styles.grayBtn, flex: 1 }}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={confirmLogout}
+          style={{ ...styles.yellowBtn, flex: 1 }}
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       <main style={styles.main}>
         {/* Home */}
@@ -350,6 +533,14 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             handleSearchSubmit={handleSearchSubmit}
             setCurrentView={handleNavigation}
+          />
+        )}
+
+        {/* Login */}
+        {currentView === "login" && (
+          <Login
+            setCurrentView={handleNavigation}
+            onLogin={handleLogin}
           />
         )}
 
@@ -425,10 +616,21 @@ export default function App() {
         {/* Buyer messages */}
         {currentView === "ask" && (
           <Messages
-            questions={questions}
+            selectedProduct={selectedProduct}
+            questions={productQuestions}
             newQuestionText={newQuestionText}
             setNewQuestionText={setNewQuestionText}
             handlePostQuestion={handlePostQuestion}
+            setCurrentView={setCurrentView}
+          />
+        )}
+
+        {/* My Messages (nav bar): the user's own questions */}
+        {currentView === "myMessages" && (
+          <MyMessages
+            questions={userQuestions}
+            handleSelectProduct={handleSelectProduct}
+            onDeleteQuestion={handleDeleteQuestion}
             setCurrentView={setCurrentView}
           />
         )}
@@ -487,6 +689,10 @@ export default function App() {
         {currentView === "settings" && (
           <Settings
             setCurrentView={setCurrentView}
+            preferences={preferences}
+            setPreferences={setPreferences}
+            account={account}
+            setAccount={setAccount}
           />
         )}
       </main>

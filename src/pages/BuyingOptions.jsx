@@ -9,9 +9,7 @@ export default function BuyingOptions({
 }) {
   const [selectedOption, setSelectedOption] = useState(null);
 
-  const hasPickup = selectedProduct.availability
-    .toLowerCase()
-    .includes("local pickup");
+  const hasPickup = selectedProduct.localPickup
 
   const hasDelivery = Boolean(selectedProduct.shipping);
 

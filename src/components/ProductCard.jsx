@@ -15,9 +15,19 @@ export default function ProductCard({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "16px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "20px",
+          flex: "1 1 0",
+          minWidth: "200px",
+        }}
+      >
         <div
           style={{
             width: "90px",
@@ -44,12 +54,21 @@ export default function ProductCard({
           <div
             style={{ fontSize: "14px", color: "#64748b", marginBottom: "8px" }}
           >
-            {product.store} • {product.availability}
+            {product.store} • ★ {product.rating} / 5
           </div>
           <div
             style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b" }}
           >
             ${product.price.toFixed(2)}
+          </div>
+          <div
+            style={{
+              fontSize: "14px",
+              color: "#64748b",
+              marginTop: "6px",
+            }}
+          >
+            {product.shipping}
           </div>
           <div
             style={{
@@ -70,8 +89,7 @@ export default function ProductCard({
           flexDirection: "column",
           gap: "10px",
           width: "210px",
-          maxWidth: "100%",
-          flexShrink: 1,
+          flexShrink: 0,
         }}
       >
         <button

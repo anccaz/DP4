@@ -65,11 +65,15 @@ export default function App() {
     useState([]);
 
   // Filters
-  const [filterPrice, setFilterPrice] = useState(false);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [filterPickup, setFilterPickup] = useState(false);
   const [filterOnline, setFilterOnline] = useState(false);
   const [filterFreeShipping, setFilterFreeShipping] =
     useState(false);
+  const [filterInStock, setFilterInStock] = useState(false);
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterRating, setFilterRating] = useState(false);
 
   // Buyer questions
   const [questions, setQuestions] = useState([
@@ -185,13 +189,13 @@ export default function App() {
       previous.map((order) =>
         order.id === "#1042"
           ? {
-              ...order,
-              returnInitiated: true,
-              returnMethod:
-                selectedReturnMethod === "drop-off"
-                  ? "Store Drop-off"
-                  : "Courier Pickup",
-            }
+            ...order,
+            returnInitiated: true,
+            returnMethod:
+              selectedReturnMethod === "drop-off"
+                ? "Store Drop-off"
+                : "Courier Pickup",
+          }
           : order
       )
     );
@@ -208,12 +212,10 @@ export default function App() {
       return;
     }
 
-    const pickupAvailable = selectedProduct.availability
-      .toLowerCase()
-      .includes("local pickup");
+    const pickupAvailable = selectedProduct.localPickup
 
     const deliveryAvailable = Boolean(
-      selectedProduct.shipping
+      selectedProduct.onlineDelivery
     );
 
     if (method === "pickup" && !pickupAvailable) return;
@@ -254,13 +256,13 @@ export default function App() {
       // Selected pickup information
       pickupStore: pickupStore
         ? {
-            id: pickupStore.id,
-            name: pickupStore.name,
-            area: pickupStore.area,
-            hours: pickupStore.hours,
-            pickupEstimate: pickupStore.pickupEstimate,
-            pickupDate: pickupStore.pickupDate,
-          }
+          id: pickupStore.id,
+          name: pickupStore.name,
+          area: pickupStore.area,
+          hours: pickupStore.hours,
+          pickupEstimate: pickupStore.pickupEstimate,
+          pickupDate: pickupStore.pickupDate,
+        }
         : null,
 
       returnInitiated: false,
@@ -283,9 +285,7 @@ export default function App() {
   // Called when continuing from Buying Options.
   const handleBuyingOptionContinue = (method) => {
     if (method === "pickup") {
-      const pickupAvailable = selectedProduct.availability
-        .toLowerCase()
-        .includes("local pickup");
+      const pickupAvailable = selectedProduct.localPickup
 
       if (!selectedProduct.inStock || !pickupAvailable) {
         return;
@@ -311,11 +311,11 @@ export default function App() {
     setDemoOrders((previous) =>
       previous.map((order) =>
         order.id === orderId &&
-        order.status !== "Cancelled"
+          order.status !== "Cancelled"
           ? {
-              ...order,
-              status: "Cancelled",
-            }
+            ...order,
+            status: "Cancelled",
+          }
           : order
       )
     );
@@ -358,14 +358,22 @@ export default function App() {
           <ProductBrowsing
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            filterPrice={filterPrice}
-            setFilterPrice={setFilterPrice}
+            minPrice={minPrice}
+            setMinPrice={setMinPrice}
+            maxPrice={maxPrice}
+            setMaxPrice={setMaxPrice}
             filterPickup={filterPickup}
             setFilterPickup={setFilterPickup}
             filterOnline={filterOnline}
             setFilterOnline={setFilterOnline}
             filterFreeShipping={filterFreeShipping}
             setFilterFreeShipping={setFilterFreeShipping}
+            filterInStock={filterInStock}
+            setFilterInStock={setFilterInStock}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            filterRating={filterRating}
+            setFilterRating={setFilterRating}
             selectedForCompare={selectedForCompare}
             toggleCompareCheckbox={toggleCompareCheckbox}
             handleSelectProduct={handleSelectProduct}

@@ -5,9 +5,6 @@ export default function ProductDetails({
   selectedProduct,
   setCurrentView,
 }) {
-  const hasPickup = selectedProduct.availability
-    .toLowerCase()
-    .includes("local pickup");
 
   const availabilityText = selectedProduct.inStock
     ? "In stock"
@@ -15,6 +12,15 @@ export default function ProductDetails({
 
   return (
     <div>
+      <div style={{ marginBottom: "20px" }}>
+        <button
+          type="button"
+          style={styles.outlineBtn}
+          onClick={() => setCurrentView("search")}
+        >
+          ← Back to results
+        </button>
+      </div>
       <span style={styles.subLabel}>Product Details</span>
       <h1 style={styles.pageHeading}>
         {selectedProduct.name}
@@ -77,16 +83,20 @@ export default function ProductDetails({
 
           <div
             style={{
-              color: selectedProduct.inStock
-                ? "#15803d"
-                : "#b91c1c",
-              fontWeight: "600",
               fontSize: "16px",
               marginBottom: "16px",
+              color: "#475569",
             }}
           >
             Sold by {selectedProduct.store} •{" "}
-            {availabilityText}
+            <span
+              style={{
+                color: selectedProduct.inStock ? "#15803d" : "#b91c1c",
+                fontWeight: "600",
+              }}
+            >
+              {availabilityText}
+            </span>
           </div>
 
           <div
@@ -117,29 +127,40 @@ export default function ProductDetails({
             }}
           />
 
-          <p
-            style={{
-              fontSize: "16px",
-              color: "#475569",
-              lineHeight: "1.6",
-              marginBottom: "12px",
-            }}
-          >
-            {hasPickup
-              ? "Local pickup is available for this product."
-              : "Local pickup is not available for this product."}
-          </p>
+          {/* Delivery and pickup information */}
+          <div style={{ marginBottom: "28px" }}>
+            <h3 style={{ fontSize: "18px", marginBottom: "16px" }}>
+              Delivery & Pickup
+            </h3>
 
-          <p
-            style={{
-              fontSize: "16px",
-              color: "#475569",
-              lineHeight: "1.6",
-              marginBottom: "28px",
-            }}
-          >
-            Shipping information: {selectedProduct.shipping}
-          </p>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+              Local pickup:
+              <span>
+                {selectedProduct.inStock && selectedProduct.localPickup
+                  ? "Available"
+                  : "Not available"}
+              </span>
+            </div>
+
+            <hr
+              style={{
+                border: "none",
+                borderTop: "1px solid #e2e8f0",
+                margin: "12px 0",
+              }}
+            />
+
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              Online delivery:
+              <span>
+                {!selectedProduct.inStock || !selectedProduct.onlineDelivery
+                  ? "Not available"
+                  : selectedProduct.shipping.toLowerCase().includes("free")
+                    ? "Free"
+                    : selectedProduct.shipping}
+              </span>
+            </div>
+          </div>
 
           {/* Product actions */}
           <div
@@ -149,14 +170,6 @@ export default function ProductDetails({
               gap: "12px",
             }}
           >
-            <button
-              type="button"
-              style={styles.grayBtn}
-              onClick={() => setCurrentView("compare")}
-            >
-              Select products
-            </button>
-
             <button
               type="button"
               style={styles.grayBtn}
@@ -182,17 +195,26 @@ export default function ProductDetails({
           </div>
         </div>
       </div>
+      {/* Product information */}
+      <div style={{ ...styles.card, marginTop: "24px" }}>
+        <h2 style={{ fontSize: "22px", marginTop: 0 }}>
+          Product Information
+        </h2>
 
-      <button
-        type="button"
-        style={{
-          ...styles.outlineBtn,
-          marginTop: "24px",
-        }}
-        onClick={() => setCurrentView("search")}
-      >
-        ← Back to results
-      </button>
+        {Object.entries(selectedProduct.specs ?? {}).map(
+          ([key, value]) => (
+            <p key={key}>
+              <strong>
+                {key
+                  .replace(/([A-Z])/g, " $1")
+                  .replace(/^./, (letter) => letter.toUpperCase())}
+                :
+              </strong>{" "}
+              {value}
+            </p>
+          )
+        )}
+      </div>
     </div>
   );
 }
